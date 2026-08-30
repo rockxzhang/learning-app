@@ -43,6 +43,18 @@ ipcMain.handle('file:pick', async () => {
   return r.canceled ? null : r.filePaths[0];
 });
 
+// 保存文件（下载代码/讲解）
+ipcMain.handle('file:save', async (e, defaultName, content, filterName, ext) => {
+  const r = await dialog.showSaveDialog(win, {
+    title: '保存 ' + defaultName,
+    defaultPath: defaultName,
+    filters: [{ name: filterName, extensions: [ext] }],
+  });
+  if (r.canceled || !r.filePath) return { ok: false, canceled: true };
+  try { fs.writeFileSync(r.filePath, content, 'utf8'); return { ok: true, filePath: r.filePath }; }
+  catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+});
+
 // 一次讲解：读取 -> 分析 -> 语音 -> 记忆
 ipcMain.handle('teach:run', async (e, cfg, filePath) => {
   try {

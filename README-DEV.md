@@ -26,7 +26,7 @@ git push origin master   # 若有远程
 ```bash
 npm run release
 ```
-读取 `release/version.json`（初始 1000），+1 后打 `release/V1.0.N/数字人讲题-V1.0.N.exe`。
+读取 `release/version.json`（初始 1000），+1 后打 `release/V1.0.N/张老师随身讲-V1.0.N.exe`。
 
 ## 注意
 - `services/config.js` 内嵌模型 API Key；上传公开仓库前请先处理掉，或用私有仓库。

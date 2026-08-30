@@ -86,6 +86,8 @@
     index = Math.max(0, Math.min(playlist.length - 1, i));
     const seg = playlist[index];
     if (!seg) return;
+    $('runBtn').textContent = '讲解中';           // 正在讲解 -> 讲解中(不可点)
+    $('runBtn').disabled = true;
     audioEl.src = fileUrl(seg.path);
     audioEl.playbackRate = Number($('rate').value || 1);
     highlightTranscript();
@@ -123,6 +125,10 @@
     $('solution').innerHTML = '<span class="empty">讲解时会生成：题意分析、核心算法、复杂度、样例推演、易错点</span>';
     $('transcript').innerHTML = '<div class="line">请先选择题目并点「开始讲解」，老师会逐句讲给你听。</div>';
     $('weakbox').innerHTML = '<span class="hint">标记你这次没弄懂的知识点（点击切换），下次讲解会重点复习：</span>';
+    $('runBtn').textContent = '开始讲解';
+    $('runBtn').disabled = !filePath;
+    $('dlCodeBtn').disabled = true;
+    $('dlDocBtn').disabled = true;
     try { audioEl.pause(); audioEl.src = ''; } catch (e) {}
     index = -1; playlist = []; current = null;
     setProg(0);
@@ -286,19 +292,20 @@
   async function analyze() {
     if (!filePath) return;
     $('runBtn').disabled = true;
-    $('runBtn').innerHTML = '<span class="spin"></span> 讲解中…';
+    $('runBtn').textContent = '讲解中…';
     $('transcript').innerHTML = '<div class="line">正在读取题目并生成讲解…</div>';
     showProg(0, '准备…');
+    let ok = false;
     try {
       const res = await api.runTeach(cfg, filePath);
-      if (!res || !res.ok) { toast('讲解失败：' + ((res && res.error) || '未知错误')); return; }
-      await applyResult(res);
+      if (!res || !res.ok) { toast('讲解失败：' + ((res && res.error) || '未知错误')); }
+      else { await applyResult(res); ok = true; }
     } catch (e) {
       toast('讲解失败：' + e.message);
     } finally {
-      $('runBtn').disabled = false;
-      $('runBtn').textContent = '开始讲解';
       hideProg();
+      if (!ok) { $('runBtn').textContent = '开始讲解'; $('runBtn').disabled = false; }
+      // ok 时 applyResult 已加载首句 -> 按钮为「讲解中」，由播放结束切换为「讲解完毕」
     }
   }
 
@@ -313,14 +320,45 @@
     playlist = res.audio || [];
     renderTranscript();
     renderWeak(res.knowledgePoints || []);
+    $('dlCodeBtn').disabled = false;
+    $('dlDocBtn').disabled = false;
     if (playlist.length) {
       loadSegment(0, true);
       toast('已生成 ' + res.teaching.length + ' 句讲解，共 ' + playlist.length + ' 段语音');
     } else {
       $('transcript').innerHTML = '<div class="line">' + ((res.teaching && res.teaching.map((t) => t.text || t).join('<br>')) || '（未生成语音）') + '</div>';
+      $('runBtn').textContent = '讲解完毕';
       toast('已生成讲解，但没有语音');
     }
   }
+
+  // 下载：示例代码(题目名.cpp) / 讲解文档(题目名.doc)
+  function sanitizeName(s) { return String(s || '').replace(/[\\\/:*?"<>|\s.]+/g, '_').replace(/^_+|_+$/g, '') || '题目'; }
+  function escH2(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function buildDocHtml(res) {
+    const kp = (res.knowledgePoints || []).map((k) => '<font color="#b06a00">' + escH2(k) + '</font>').join('、');
+    const teach = (res.teaching || []).map((t) => (t && t.text) || t).map((t, i) => '<p><b>' + (i + 1) + '.</b> ' + escH2(t) + '</p>').join('');
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escH2(res.title || '讲解') + '</title>'
+      + '<style>body{font:15px/1.75 微软雅黑;color:#333;max-width:800px;margin:24px auto;padding:0 16px}h1{color:#1a3b8f}h2{color:#1a3b8f;border-bottom:1px solid #ddd;padding-bottom:4px}pre{background:#f4f6fb;padding:12px;border-radius:8px;overflow:auto;font:13px Consolas,monospace;color:#1c2b4a}</style></head><body>'
+      + '<h1>' + escH2(res.title || '讲解') + '</h1>'
+      + '<p><b>涉及知识点：</b>' + kp + '</p>'
+      + '<h2>一、解题思路</h2>' + mdToHtml(res.solution || '')
+      + '<h2>二、讲解内容</h2>' + teach
+      + '<h2>三、参考代码</h2><pre>' + escH2(stripFence(res.code || '')) + '</pre>'
+      + '</body></html>';
+  }
+  $('dlCodeBtn').onclick = async () => {
+    if (!current) return;
+    const r = await api.saveFile(sanitizeName(current.title) + '.cpp', stripFence(current.code || ''), 'C++ 源文件', 'cpp');
+    if (r && r.ok) toast('已保存代码：' + r.filePath); else if (r && r.canceled) toast('已取消');
+    else if (r && r.error) toast('保存失败：' + r.error);
+  };
+  $('dlDocBtn').onclick = async () => {
+    if (!current) return;
+    const r = await api.saveFile(sanitizeName(current.title) + '.doc', buildDocHtml(current), 'Word 文档', 'doc');
+    if (r && r.ok) toast('已保存讲解：' + r.filePath); else if (r && r.canceled) toast('已取消');
+    else if (r && r.error) toast('保存失败：' + r.error);
+  };
 
   // ---- 播放控制 ----
   $('playBtn').onclick = () => audioEl.play().catch(() => toast('无法播放，请检查网络'));
@@ -329,7 +367,10 @@
   $('nextBtn').onclick = () => loadSegment(index + 1, true);
   $('rate').onchange = () => { audioEl.playbackRate = Number($('rate').value || 1); };
 
-  audioEl.addEventListener('ended', () => { if (autoSpeak && index < playlist.length - 1) loadSegment(index + 1, true); });
+  audioEl.addEventListener('ended', () => {
+    if (index >= playlist.length - 1) { $('runBtn').textContent = '讲解完毕'; $('runBtn').disabled = true; }
+    else if (autoSpeak) loadSegment(index + 1, true);
+  });
 
   // ---- toast ----
   let toastTimer = null;

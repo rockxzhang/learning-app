@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8">
-<title>数字人讲题 · 自主学习</title>
+<title>张老师随身讲</title>
 <style>
 :root{--bg:#0f1420;--card:#171f30;--card2:#141b2b;--line:#26314a;--fg:#e8eef8;--mut:#9aa8c2;--acc:#4f8cff;--ok:#23b26b;--err:#ff5c6c;--warn:#f0a54a}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -100,7 +100,7 @@ button{cursor:pointer}
 <body>
 <div class="app">
   <div class="header">
-    <h1>数字人讲题 <small>自主学习讲解</small></h1>
+    <h1>张老师随身讲 <small>自主学习讲解</small></h1>
     <button class="btn ghost" id="pickBtn">选择题目文件</button>
     <span class="fname" id="fname">未选择</span>
     <span class="spacer"></span>
@@ -144,6 +144,8 @@ button{cursor:pointer}
           <span class="rate">语速
             <select id="rate"><option value="0.8">0.8x</option><option value="1" selected>1.0x</option><option value="1.2">1.2x</option><option value="1.5">1.5x</option></select>
           </span>
+          <button class="btn ghost" id="dlCodeBtn" disabled>下载代码</button>
+          <button class="btn ghost" id="dlDocBtn" disabled>下载讲解</button>
         </div>
         <div class="weakbox" id="weakbox"><span class="hint">标记你这次没弄懂的知识点（点击切换），下次讲解会重点复习：</span></div>
       </div>

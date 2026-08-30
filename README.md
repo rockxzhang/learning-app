@@ -1,4 +1,4 @@
-# 数字人讲题（自主学习讲解）
+# 张老师随身讲（自主学习讲解）
 
 上传题目（图片 / PDF / Word / Markdown），模型自动生成：
 - **左侧**：带逐行中文注释的 C++ 参考代码
@@ -16,7 +16,7 @@ npm start
 
 ## 打包发布
 ```bash
-npm run release    # 读取版本号+1，打 release/V1.0.N/数字人讲题-V1.0.N.exe
+npm run release    # 读取版本号+1，打 release/V1.0.N/张老师随身讲-V1.0.N.exe
 ```
 
 ## 技术说明

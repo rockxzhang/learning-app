@@ -23,3 +23,11 @@ execSync('npx electron-builder --win portable --publish never --config.directori
   }),
 });
 console.log('完成。产物目录：' + outDir);
+
+// 生成《张老师随身讲 使用说明书》PDF
+try {
+  execSync('python make_manual.py', {
+    cwd: ROOT, stdio: 'inherit',
+    env: Object.assign({}, process.env, { MANUAL_OUT: path.join(outDir, '张老师随身讲-使用说明书.pdf') }),
+  });
+} catch (e) { console.warn('说明书生成失败：' + (e && e.message)); }

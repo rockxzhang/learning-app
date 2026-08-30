@@ -8,7 +8,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",sans-serif;overflow:hidden}
 button{cursor:pointer}
-.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+.app{display:grid;grid-template-rows:auto auto 1fr;height:100vh}
 
 /* header */
 .header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -91,8 +91,8 @@ button{cursor:pointer}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--mut);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
-/* progress bar */
-.prog{position:fixed;left:0;right:0;top:0;z-index:60;background:var(--card);border-bottom:1px solid var(--line);padding:7px 16px;display:flex;align-items:center;gap:10px;display:none}
+/* progress bar (正常流，位于头部下方一行，不遮挡) */
+.prog{background:var(--card);border-bottom:1px solid var(--line);padding:6px 16px;align-items:center;gap:10px;display:none}
 .prog.bar{display:flex}
 .prog-bar{flex:1;height:7px;background:var(--card2);border-radius:7px;overflow:hidden}
 .prog-fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),#8bb0ff);border-radius:7px;transition:width .25s}
@@ -102,10 +102,6 @@ button{cursor:pointer}
 </style>
 </head>
 <body>
-<div class="prog" id="prog">
-  <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
-  <span class="prog-text" id="progText">准备…</span>
-</div>
 <div class="app">
   <div class="header">
     <h1>数字人讲题 <small>自主学习讲解</small></h1>
@@ -113,7 +109,13 @@ button{cursor:pointer}
     <span class="fname" id="fname">未选择</span>
     <span class="spacer"></span>
     <span class="version">软件版本：<b id="curVer">--</b></span>
+    <button class="btn ghost" id="shotBtn">题目截图</button>
     <button class="btn" id="runBtn" disabled>开始讲解</button>
+  </div>
+
+  <div class="prog" id="prog">
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-text" id="progText">准备…</span>
   </div>
 
   <div class="main">

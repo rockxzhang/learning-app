@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('api', {
   cfgLoad: () => ipcRenderer.invoke('cfg:load'),
   cfgSave: (cfg) => ipcRenderer.invoke('cfg:save', cfg),
   pickFile: () => ipcRenderer.invoke('file:pick'),
+  startShot: () => ipcRenderer.invoke('shot:start'),
   runTeach: (cfg, filePath) => ipcRenderer.invoke('teach:run', cfg, filePath),
   memoryProfile: () => ipcRenderer.invoke('memory:profile'),
   markWeak: (title, weakPoints) => ipcRenderer.invoke('memory:weak', title, weakPoints),

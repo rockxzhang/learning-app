@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>区域截图</title>
+<style>
+html,body{margin:0;padding:0;overflow:hidden;background:#000;user-select:none;-webkit-user-select:none;cursor:crosshair}
+#bg{position:absolute;left:0;top:0;width:100vw;height:100vh;object-fit:fill}
+#sel{position:absolute;display:none;border:2px solid #4f8cff;background:rgba(79,140,255,.22);box-sizing:border-box;box-shadow:0 0 0 9999px rgba(0,0,0,.45)}
+#actions{position:absolute;display:none;flex-direction:row;gap:12px;z-index:20}
+#actions button{width:56px;height:56px;border-radius:50%;border:0;font-size:28px;color:#fff;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.5)}
+#okBtn{background:#23b26b}
+#cancelBtn{background:#ff5c6c}
+#hint{position:absolute;left:50%;top:16px;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.6);padding:9px 18px;border-radius:10px;font:14px "Microsoft YaHei";z-index:20;white-space:nowrap}
+</style>
+</head>
+<body>
+<img id="bg" alt="">
+<div id="sel"></div>
+<div id="actions"><button id="okBtn" title="确认">✓</button><button id="cancelBtn" title="取消">✕</button></div>
+<div id="hint">按住鼠标左键拖动，框选要截取的题目区域；松开后点 ✓ 确认 / ✕ 取消</div>
+<script src="snipper.js"></script>
+</body>
+</html>

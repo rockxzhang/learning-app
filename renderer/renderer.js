@@ -149,6 +149,20 @@
     if (box.children[index]) box.children[index].scrollIntoView({ block: 'nearest' });
   }
 
+  // ---- 重置为初始状态（新题/截图上传前清空旧内容）----
+  function resetUI() {
+    $('title1').textContent = '—';
+    $('kpoint').textContent = '';
+    $('code').innerHTML = '<span class="empty">点击「开始讲解」生成带逐行注释的 C++ 代码</span>';
+    $('solution').innerHTML = '<span class="empty">讲解时会生成：题意分析、核心算法、复杂度、样例推演、易错点</span>';
+    $('caption').textContent = '请先选择题目并点「开始讲解」，老师会逐句讲给你听。';
+    $('transcript').textContent = '';
+    $('weakbox').innerHTML = '<span class="hint">标记你这次没弄懂的知识点（点击切换），下次讲解会重点复习：</span>';
+    try { audioEl.pause(); audioEl.src = ''; } catch (e) {}
+    index = -1; playlist = []; current = null;
+    setProg(0);
+  }
+
   // ---- 渲染代码（单遍 tokenizer：边转义边包裹，不再二次处理已插入的标记）----
   const KW = /^(include|using|namespace|int|long|short|char|bool|float|double|void|return|if|else|for|while|do|break|continue|cin|cout|endl|const|struct|class|public|private|typedef|auto|string|vector|map|sort|max|min|abs|size|begin|end|define|scanf|printf)$/;
   function escH(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -290,9 +304,21 @@
     filePath = p;
     $('fname').textContent = p.split(/[\\/]/).pop();
     $('runBtn').disabled = false;
+    resetUI();
   };
 
-  $('runBtn').onclick = async () => {
+  // 截图：最小化 -> 区域截图 -> 绿√确认/红×取消 -> 存临时png -> 回自动上传分析
+  $('shotBtn').onclick = async () => {
+    resetUI();
+    const r = await api.startShot();
+    if (!r || !r.ok || !r.filePath) { if (r && r.canceled) toast('已取消截图'); return; }
+    filePath = r.filePath;
+    $('fname').textContent = filePath.split(/[\\/]/).pop();
+    $('runBtn').disabled = false;
+    analyze();
+  };
+
+  async function analyze() {
     if (!filePath) return;
     $('runBtn').disabled = true;
     $('runBtn').innerHTML = '<span class="spin"></span> 讲解中…';
@@ -300,7 +326,7 @@
     showProg(0, '准备…');
     try {
       const res = await api.runTeach(cfg, filePath);
-      if (!res || !res.ok) { toast('讲解失败：' + (res && res.error || '未知错误')); return; }
+      if (!res || !res.ok) { toast('讲解失败：' + ((res && res.error) || '未知错误')); return; }
       await applyResult(res);
     } catch (e) {
       toast('讲解失败：' + e.message);
@@ -309,7 +335,9 @@
       $('runBtn').textContent = '开始讲解';
       hideProg();
     }
-  };
+  }
+
+  $('runBtn').onclick = () => { if (filePath) { resetUI(); analyze(); } };
 
   async function applyResult(res) {
     current = res;

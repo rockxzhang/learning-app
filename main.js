@@ -1,11 +1,12 @@
 // main.js - Electron 主进程 for 数字人讲题
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, desktopCapturer, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
 const services = require('./services/index');
 
 let win;
+let overlayWin = null;
 function createWindow() {
   win = new BrowserWindow({
     width: 1280, height: 840, minWidth: 980, minHeight: 640,
@@ -61,3 +62,49 @@ ipcMain.handle('version:current', () => {
   try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'version.json'), 'utf8')).current; }
   catch (e) { return services.config.load(DATA_DIR).baseVersion; }
 });
+
+// ---- 题目截图 ----
+ipcMain.handle('shot:start', () => new Promise((resolve) => {
+  let settled = false;
+  const onCrop = (e, base64) => {
+    try { const fp = services.screenshot.savePng(base64, DATA_DIR); finish({ ok: true, filePath: fp }); }
+    catch (err) { finish({ ok: false, error: String((err && err.message) || err) }); }
+  };
+  const onCancel = () => finish({ ok: false, canceled: true });
+  const cleanup = () => {
+    ipcMain.removeListener('shot:crop', onCrop);
+    ipcMain.removeListener('shot:cancel', onCancel);
+  };
+  const finish = (result) => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    if (overlayWin) { try { overlayWin.destroy(); } catch (e) {} overlayWin = null; }
+    if (win) { win.show(); win.focus(); }
+    resolve(result);
+  };
+  ipcMain.on('shot:crop', onCrop);
+  ipcMain.on('shot:cancel', onCancel);
+
+  win.hide();
+  setTimeout(async () => {
+    try {
+      const img = await services.screenshot.capture();
+      const dataUrl = img.toDataURL();
+      const b = screen.getPrimaryDisplay().bounds;
+      overlayWin = new BrowserWindow({
+        width: b.width, height: b.height, x: b.x, y: b.y,
+        frame: false, resizable: false, movable: false, skipTaskbar: true,
+        alwaysOnTop: true, transparent: true, backgroundColor: '#000000', hasShadow: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false },
+      });
+      overlayWin.setAlwaysOnTop(true, 'screen-saver');
+      overlayWin.on('closed', () => finish({ ok: false, canceled: true }));
+      overlayWin.loadFile(path.join(__dirname, 'renderer', 'snipper.html'), {
+        query: { data: encodeURIComponent(dataUrl), w: String(b.width), h: String(b.height) },
+      });
+    } catch (err) {
+      finish({ ok: false, error: String((err && err.message) || err) });
+    }
+  }, 250);
+}));

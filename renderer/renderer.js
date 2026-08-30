@@ -88,46 +88,12 @@
     if (!seg) return;
     audioEl.src = fileUrl(seg.path);
     audioEl.playbackRate = Number($('rate').value || 1);
-    renderCaption(seg);
     highlightTranscript();
     highlightCodeLines(seg.from, seg.to);
     if (doPlay) audioEl.play().catch(() => {});
   }
 
-  // ---- 字幕 ----
-  let spans = [];
-  function buildSpans(seg) {
-    spans = [];
-    if (seg.boundaries && seg.boundaries.length) {
-      spans = seg.boundaries.map((b) => ({ t: b.text, s: b.start, d: b.dur }));
-    } else {
-      spans = [{ t: seg.text || '', s: 0, d: 100000 }];
-    }
-    if (!spans.length) spans = [{ t: seg.text || '', s: 0, d: 100000 }];
-  }
-  function renderCaption(seg) {
-    buildSpans(seg);
-    const cap = $('caption');
-    cap.textContent = '';
-    spans.forEach((w, i) => {
-      const el = document.createElement('span');
-      el.className = 'word';
-      el.dataset.i = i;
-      el.textContent = (i === 0 ? '' : '') + w.t;
-      cap.appendChild(el);
-    });
-  }
-  function updateSpans() {
-    const t = audioEl.currentTime * 1000;
-    const words = $('caption').children;
-    for (let i = 0; i < spans.length; i++) {
-      const w = spans[i];
-      const on = t >= w.s && t < (w.s + w.d);
-      if (words[i]) words[i].classList.toggle('on', on);
-    }
-  }
-
-  // ---- 讲稿 ----
+  // ---- 讲稿（唯一字幕，当前句高亮）----
   function renderTranscript() {
     const box = $('transcript');
     box.textContent = '';
@@ -155,8 +121,7 @@
     $('kpoint').textContent = '';
     $('code').innerHTML = '<span class="empty">点击「开始讲解」生成带逐行注释的 C++ 代码</span>';
     $('solution').innerHTML = '<span class="empty">讲解时会生成：题意分析、核心算法、复杂度、样例推演、易错点</span>';
-    $('caption').textContent = '请先选择题目并点「开始讲解」，老师会逐句讲给你听。';
-    $('transcript').textContent = '';
+    $('transcript').innerHTML = '<div class="line">请先选择题目并点「开始讲解」，老师会逐句讲给你听。</div>';
     $('weakbox').innerHTML = '<span class="hint">标记你这次没弄懂的知识点（点击切换），下次讲解会重点复习：</span>';
     try { audioEl.pause(); audioEl.src = ''; } catch (e) {}
     index = -1; playlist = []; current = null;
@@ -322,7 +287,7 @@
     if (!filePath) return;
     $('runBtn').disabled = true;
     $('runBtn').innerHTML = '<span class="spin"></span> 讲解中…';
-    $('caption').textContent = '正在读取题目并生成讲解…';
+    $('transcript').innerHTML = '<div class="line">正在读取题目并生成讲解…</div>';
     showProg(0, '准备…');
     try {
       const res = await api.runTeach(cfg, filePath);
@@ -352,7 +317,7 @@
       loadSegment(0, true);
       toast('已生成 ' + res.teaching.length + ' 句讲解，共 ' + playlist.length + ' 段语音');
     } else {
-      $('caption').textContent = res.teaching && res.teaching.join('\n') || '（未生成语音）';
+      $('transcript').innerHTML = '<div class="line">' + ((res.teaching && res.teaching.map((t) => t.text || t).join('<br>')) || '（未生成语音）') + '</div>';
       toast('已生成讲解，但没有语音');
     }
   }
@@ -364,7 +329,6 @@
   $('nextBtn').onclick = () => loadSegment(index + 1, true);
   $('rate').onchange = () => { audioEl.playbackRate = Number($('rate').value || 1); };
 
-  audioEl.addEventListener('timeupdate', updateSpans);
   audioEl.addEventListener('ended', () => { if (autoSpeak && index < playlist.length - 1) loadSegment(index + 1, true); });
 
   // ---- toast ----
@@ -376,10 +340,6 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => b.classList.remove('show'), 2600);
   }
-
-  // 供自测/调试访问（不影响正常使用）
-  window.__renderCode = renderCode;
-  window.__highlightCodeLines = highlightCodeLines;
 
   boot();
 })();

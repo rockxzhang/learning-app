@@ -32,14 +32,16 @@ button{cursor:pointer}
 .panel-body{flex:1;overflow:auto;min-height:0}
 
 /* code */
-#code{font-family:Consolas,"JetBrains Mono",monospace;font-size:13px;line-height:1.6;padding:14px;white-space:pre;tab-size:4;color:#d6e2ff}
-#code .cm{color:#7a8c6a;font-style:italic}
-#code .kw{color:#c792ea}
-#code .st{color:#c3e88d}
-#code .nu{color:#f78c6c}
-#code .fn{color:#82aaff}
-#code .pre{color:#f78c6c}
-#code .pp{color:#ff5370}
+#code{font-family:Consolas,"JetBrains Mono",monospace;font-size:13px;line-height:1.6;padding:0;border-radius:0}
+.coder{overflow:auto;height:100%;padding:8px 0}
+.cl{display:block;white-space:pre;min-height:1.5em;padding:0 12px;border-left:3px solid transparent;transition:background .15s,border-color .15s}
+.cl:nth-child(even){background:rgba(255,255,255,.015)}
+.cl.active{background:rgba(79,140,255,.18);border-left:3px solid var(--acc)}
+.cl .cm{color:#7a8c6a;font-style:italic}
+.cl .kw{color:#c792ea}
+.cl .st{color:#c3e88d}
+.cl .nu{color:#f78c6c}
+.cl .fn{color:#82aaff}
 
 /* markdown solution */
 #solution{padding:14px;font-size:14px;line-height:1.75}
@@ -119,7 +121,7 @@ button{cursor:pointer}
     <div class="left">
       <div class="panel">
         <div class="panel-head">带注释的参考代码 <span class="tag" id="title1">—</span></div>
-        <div class="panel-body"><pre id="code"><span class="empty">点击「开始讲解」生成带逐行注释的 C++ 代码</span></pre></div>
+        <div class="panel-body"><div id="code" class="coder"><span class="empty">点击「开始讲解」生成带逐行注释的 C++ 代码</span></div></div>
       </div>
     </div>
 

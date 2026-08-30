@@ -33,10 +33,14 @@ async function run(dataDir, cfg, filePath, log, progress) {
     fs.mkdirSync(ttsDir, { recursive: true });
     const audio = [];
     for (let i = 0; i < segs.length; i++) {
-      const t = String(segs[i] || '').trim();
+      const s = segs[i] || {};
+      const t = String(s.text || '').trim();
       if (!t) continue;
       prog('tts', 25 + Math.round(70 * (i / Math.max(1, segs.length))), '合成语音 ' + (i + 1) + '/' + segs.length);
-      audio.push(await tts.segment(ttsDir, cfg.teacherVoice, cfg.speechRate || 1, t, i));
+      const a = await tts.segment(ttsDir, cfg.teacherVoice, cfg.speechRate || 1, t, i);
+      a.from = s.from == null ? null : Number(s.from);
+      a.to = s.to == null ? null : Number(s.to);
+      audio.push(a);
     }
     prog('tts', 95, '语音已就绪，整理讲解…');
     const version = nextVersion(dataDir, cfg);

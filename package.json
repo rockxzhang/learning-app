@@ -9,6 +9,7 @@
     "start": "electron .",
     "dist": "electron-builder --win nsis",
     "release": "node scripts/build-release.js",
+    "portable": "node scripts/build-portable.js",
     "gitrelease": "node scripts/git-release.js"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "icon": "build/icon.ico",
     "files": ["main.js", "preload.js", "renderer/**", "services/**", "scripts/**", "build/**"],
     "win": { "target": "nsis", "artifactName": "数字人讲题-${env.APP_VERSION}.${ext}" },
+    "portable": { "artifactName": "数字人讲题-${env.APP_VERSION}-便携版.${ext}" },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

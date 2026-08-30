@@ -90,6 +90,7 @@
     audioEl.playbackRate = Number($('rate').value || 1);
     renderCaption(seg);
     highlightTranscript();
+    highlightCodeLines(seg.from, seg.to);
     if (doPlay) audioEl.play().catch(() => {});
   }
 
@@ -173,6 +174,26 @@
     out += escH(code.slice(last));
     return out;
   }
+  // ---- 代码：逐行渲染 + 高亮 ----
+  function renderCode(code) {
+    const box = $('code');
+    const raw = String(code || '');
+    const lines = stripFence(raw).split('\n');
+    box.innerHTML = lines.map((l, i) => '<div class="cl" data-line="' + (i + 1) + '">' + (hl(l) || '&nbsp;') + '</div>').join('');
+    if (!raw.trim()) box.innerHTML = '<span class="empty">未生成代码</span>';
+  }
+  function highlightCodeLines(from, to) {
+    const lines = document.querySelectorAll('#code .cl');
+    if (lines.length) for (let i = 0; i < lines.length; i++) lines[i].classList.remove('active');
+    if (from == null) return;
+    let first = null;
+    for (let i = from; i <= (to == null ? from : to); i++) {
+      const el = lines[i - 1];
+      if (el) { el.classList.add('active'); if (!first) first = el; }
+    }
+    if (first) first.scrollIntoView({ block: 'nearest' });
+  }
+
   function stripFence(s) {
     return String(s || '').replace(/^\s*```[a-zA-Z]*\s*\n?([\s\S]*?)```\s*$/g, '$1').trim();
   }
@@ -294,7 +315,7 @@
     current = res;
     $('title1').textContent = res.title || '';
     $('kpoint').textContent = (res.knowledgePoints || []).slice(0, 2).map((k) => k).join('、') || '知识点';
-    $('code').innerHTML = hl(stripFence(res.code)) || '<span class="empty">未生成代码</span>';
+    renderCode(res.code);
     $('solution').innerHTML = mdToHtml(res.solution) || '<span class="empty">未生成思路</span>';
     playlist = res.audio || [];
     renderTranscript();

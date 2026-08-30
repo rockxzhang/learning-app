@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>数字人讲题 · 自主学习</title>
+<style>
+:root{--bg:#0f1420;--card:#171f30;--card2:#141b2b;--line:#26314a;--fg:#e8eef8;--mut:#9aa8c2;--acc:#4f8cff;--ok:#23b26b;--err:#ff5c6c;--warn:#f0a54a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",sans-serif;overflow:hidden}
+button{cursor:pointer}
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+
+/* header */
+.header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.header h1{font-size:16px}
+.header h1 small{color:var(--mut);font-size:12px;font-weight:400;margin-left:8px}
+.spacer{flex:1}
+.btn{background:var(--acc);border:0;color:#fff;padding:7px 15px;border-radius:8px;font-size:13px}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:var(--card2);border:1px solid var(--line);color:var(--fg)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.fname{color:var(--mut);font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.version{color:var(--mut);font-size:12px}
+
+/* main layout */
+.main{display:grid;grid-template-columns:1.1fr 1fr;gap:10px;padding:10px;overflow:hidden}
+.left{display:grid;grid-template-rows:auto 1fr;min-width:0}
+.right{display:grid;grid-template-rows:1.1fr 1.3fr;min-width:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.panel-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--mut)}
+.panel-head .tag{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-size:12px;color:var(--fg)}
+.panel-body{flex:1;overflow:auto;min-height:0}
+
+/* code */
+#code{font-family:Consolas,"JetBrains Mono",monospace;font-size:13px;line-height:1.6;padding:14px;white-space:pre;tab-size:4;color:#d6e2ff}
+#code .cm{color:#7a8c6a;font-style:italic}
+#code .kw{color:#c792ea}
+#code .st{color:#c3e88d}
+#code .nu{color:#f78c6c}
+#code .fn{color:#82aaff}
+#code .pre{color:#f78c6c}
+#code .pp{color:#ff5370}
+
+/* markdown solution */
+#solution{padding:14px;font-size:14px;line-height:1.75}
+#solution h1,#solution h2,#solution h3{margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line);color:#fff}
+#solution h1{font-size:18px}#solution h2{font-size:16px}#solution h3{font-size:14px}
+#solution p{margin:6px 0}
+#solution ul,#solution ol{margin:6px 0 6px 22px}
+#solution li{margin:3px 0}
+#solution strong{color:#ffd479}
+#solution code{background:#0a1120;border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-family:Consolas,monospace;font-size:13px;color:#c3e88d}
+#solution pre{background:#0a1120;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto}
+#solution pre code{background:none;border:0;padding:0;display:block;white-space:pre}
+#solution blockquote{border-left:3px solid var(--acc);padding:2px 10px;margin:8px 0;color:var(--mut)}
+#solution table{border-collapse:collapse;margin:8px 0}
+#solution th,#solution td{border:1px solid var(--line);padding:5px 10px;font-size:13px}
+
+/* teacher panel */
+.teacher{display:grid;grid-template-columns:auto 1fr;gap:12px;flex:1;min-height:0}
+.avatar-wrap{display:flex;align-items:flex-end;justify-content:center;min-width:190px}
+.avatar-wrap svg{width:190px;height:230px}
+.speak-area{display:flex;flex-direction:column;min-width:0}
+.caption{flex:1;min-height:0;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:18px;line-height:1.8;overflow:auto;color:#fff;text-align:left}
+.caption .word{color:var(--mut)}
+.caption .word.on{color:#fff;background:var(--acc);border-radius:4px}
+.transcript{margin-top:8px;max-height:140px;overflow:auto;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--mut)}
+.transcript .line{padding:3px 6px;border-radius:6px;cursor:default}
+.transcript .line.current{background:rgba(79,140,255,.18);color:#fff}
+.transcript .line.done{color:#c4cfe3}
+
+/* controls */
+.controls{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.controls .btn{padding:6px 13px}
+.rate{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+.rate select{background:#0a1120;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:4px 6px}
+
+/* weak chips */
+.weakbox{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-top:1px solid var(--line)}
+.weakbox .chip{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--mut);cursor:pointer}
+.weakbox .chip.active{background:rgba(240,165,74,.18);border-color:var(--warn);color:var(--warn)}
+.weakbox .hint{font-size:12px;color:var(--mut)}
+
+/* log toast */
+.logbar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--fg);opacity:0;transition:opacity .2s;pointer-events:none;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logbar.show{opacity:1}
+
+.empty{color:var(--mut);font-size:13px;padding:20px;text-align:center}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--mut);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>数字人讲题 <small>自主学习讲解</small></h1>
+    <button class="btn ghost" id="pickBtn">选择题目文件</button>
+    <span class="fname" id="fname">未选择</span>
+    <span class="spacer"></span>
+    <span class="version">软件版本：<b id="curVer">--</b></span>
+    <button class="btn" id="runBtn" disabled>开始讲解</button>
+  </div>
+
+  <div class="main">
+    <!-- 左：代码 -->
+    <div class="left">
+      <div class="panel">
+        <div class="panel-head">带注释的参考代码 <span class="tag" id="title1">—</span></div>
+        <div class="panel-body"><pre id="code"><span class="empty">点击「开始讲解」生成带逐行注释的 C++ 代码</span></pre></div>
+      </div>
+    </div>
+
+    <!-- 右：上思路 / 下数字人 -->
+    <div class="right">
+      <div class="panel">
+        <div class="panel-head">解题思路（详细）</div>
+        <div class="panel-body"><div id="solution"><span class="empty">讲解时会生成：题意分析、核心算法、复杂度、样例推演、易错点</span></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">数字人老师讲解 <span class="tag" id="kpoint"></span></div>
+        <div class="panel-body">
+          <div class="teacher">
+            <div class="avatar-wrap" id="avatar"></div>
+            <div class="speak-area">
+              <div class="caption" id="caption">请先选择题目并点「开始讲解」，老师会逐句讲给你听。</div>
+              <div class="transcript" id="transcript"></div>
+            </div>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn ghost" id="prevBtn">上一句</button>
+          <button class="btn ghost" id="playBtn">播放 ▶</button>
+          <button class="btn ghost" id="pauseBtn">暂停</button>
+          <button class="btn ghost" id="nextBtn">下一句</button>
+          <span class="rate">语速
+            <select id="rate"><option value="0.8">0.8x</option><option value="1" selected>1.0x</option><option value="1.2">1.2x</option><option value="1.5">1.5x</option></select>
+          </span>
+        </div>
+        <div class="weakbox" id="weakbox"><span class="hint">标记你这次没弄懂的知识点（点击切换），下次讲解会重点复习：</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="logbar" id="logbar"></div>
+
+<script src="avatar.js"></script>
+<script src="renderer.js"></script>
+</body>
+</html>

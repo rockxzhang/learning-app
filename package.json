@@ -1,0 +1,37 @@
+{
+  "name": "learning-app",
+  "version": "1.0.0",
+  "description": "自主学习讲解：上传题目 → 生成带注释代码/解题思路 → 数字人教师自然语音+中文字幕讲解，跨题目记忆个性化",
+  "main": "main.js",
+  "author": "rockxzhang",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "release": "node scripts/build-release.js",
+    "gitrelease": "node scripts/git-release.js"
+  },
+  "dependencies": {
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.rockxzhang.learning",
+    "productName": "数字人讲题",
+    "icon": "build/icon.ico",
+    "files": ["main.js", "preload.js", "renderer/**", "services/**", "scripts/**", "build/**"],
+    "win": { "target": "nsis", "artifactName": "数字人讲题-${env.APP_VERSION}.${ext}" },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "数字人讲题"
+    }
+  }
+}

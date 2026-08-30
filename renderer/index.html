@@ -88,9 +88,22 @@ button{cursor:pointer}
 .empty{color:var(--mut);font-size:13px;padding:20px;text-align:center}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--mut);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* progress bar */
+.prog{position:fixed;left:0;right:0;top:0;z-index:60;background:var(--card);border-bottom:1px solid var(--line);padding:7px 16px;display:flex;align-items:center;gap:10px;display:none}
+.prog.bar{display:flex}
+.prog-bar{flex:1;height:7px;background:var(--card2);border-radius:7px;overflow:hidden}
+.prog-fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),#8bb0ff);border-radius:7px;transition:width .25s}
+.prog-fill.pulse{animation:progPulse 1.2s infinite}
+@keyframes progPulse{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+.prog-text{font-size:12px;color:var(--mut);white-space:nowrap;min-width:150px}
 </style>
 </head>
 <body>
+<div class="prog" id="prog">
+  <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+  <span class="prog-text" id="progText">准备…</span>
+</div>
 <div class="app">
   <div class="header">
     <h1>数字人讲题 <small>自主学习讲解</small></h1>

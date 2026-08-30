@@ -45,7 +45,9 @@ ipcMain.handle('file:pick', async () => {
 // 一次讲解：读取 -> 分析 -> 语音 -> 记忆
 ipcMain.handle('teach:run', async (e, cfg, filePath) => {
   try {
-    return await services.pipeline.run(DATA_DIR, cfg, filePath, (m) => win.webContents.send('teach:log', m));
+    return await services.pipeline.run(DATA_DIR, cfg, filePath,
+      (m) => win.webContents.send('teach:log', m),
+      (p) => win.webContents.send('teach:progress', p));
   } catch (err) {
     return { ok: false, error: String((err && err.message) || err) };
   }

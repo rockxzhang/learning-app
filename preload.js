@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('api', {
   markWeak: (title, weakPoints) => ipcRenderer.invoke('memory:weak', title, weakPoints),
   versionCurrent: () => ipcRenderer.invoke('version:current'),
   onLog: (cb) => ipcRenderer.on('teach:log', (e, m) => cb(m)),
+  onProgress: (cb) => ipcRenderer.on('teach:progress', (e, p) => cb(p)),
 });

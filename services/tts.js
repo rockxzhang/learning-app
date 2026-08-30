@@ -96,4 +96,4 @@ async function synthesize(dir, cfg, teaching) {
   }
   return results;
 }
-module.exports = { synthesize };
+module.exports = { synthesize, segment };

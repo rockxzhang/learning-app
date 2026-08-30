@@ -10,6 +10,53 @@
   let index = 0;
   let autoSpeak = true;
 
+  // ---- 进度条 ----
+  let creepTimer = null, curPct = 0, ttsTarget = -1;
+  function showProg(pct, text) {
+    const p = $('prog');
+    p.classList.add('bar');          // display:flex
+    $('progText').textContent = text || '准备…';
+    setProg(pct || 0);
+  }
+  function setProg(pct) {
+    curPct = Math.max(0, Math.min(100, pct));
+    $('progFill').style.width = curPct + '%';
+  }
+  function hideProg() {
+    clearInterval(creepTimer); creepTimer = null;
+    const p = $('prog');
+    p.classList.remove('bar');
+    $('progFill').classList.remove('pulse');
+    setProg(0);
+  }
+  function handleProgress(p) {
+    if (!p) return;
+    const fill = $('progFill');
+    if (p.phase === 'done') { hideProg(); return; }
+    if (p.phase === 'tts') {
+      clearInterval(creepTimer); creepTimer = null;
+      fill.classList.remove('pulse');
+      setProg(p.pct);
+      $('progText').textContent = p.detail || '合成语音…';
+      ttsTarget = p.pct;
+    } else if (p.phase === 'analyze') {
+      // 分析阶段无真实小进度：缓慢蠕动 + 呼吸动画，避免“卡住”的感觉
+      setProg(15);
+      fill.classList.add('pulse');
+      let crept = 15;
+      clearInterval(creepTimer);
+      creepTimer = setInterval(() => {
+        crept += 0.5;
+        if (crept >= 24.5) crept = 21;   // 在 21~24.5 之间往复
+        setProg(crept);
+      }, 300);
+      $('progText').textContent = p.detail || '模型分析中…';
+    } else {
+      setProg(p.pct);
+      $('progText').textContent = p.detail || '处理中…';
+    }
+  }
+
   // ---- 音频 + WebAudio（驱动口型）----
   const audioEl = document.createElement('audio');
   let actx = null, analyser = null;
@@ -101,15 +148,30 @@
     if (box.children[index]) box.children[index].scrollIntoView({ block: 'nearest' });
   }
 
-  // ---- 渲染代码（简单高亮）----
+  // ---- 渲染代码（单遍 tokenizer：边转义边包裹，不再二次处理已插入的标记）----
+  const KW = /^(include|using|namespace|int|long|short|char|bool|float|double|void|return|if|else|for|while|do|break|continue|cin|cout|endl|const|struct|class|public|private|typedef|auto|string|vector|map|sort|max|min|abs|size|begin|end|define|scanf|printf)$/;
+  function escH(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function hl(code) {
-    const esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return esc
-      .replace(/\/(\/[^\n]*)|(\/\*[\s\S]*?\*\/)/g, '<span class="cm">$1$2</span>')
-      .replace(/(&quot;|")([^"\n]*)\1/g, '<span class="st">$1$2$1</span>')
-      .replace(/\b(include|using|namespace|int|long|short|char|bool|float|double|void|return|if|else|for|while|do|break|continue|cin|cout|endl|const|struct|class|public|private|typedef|auto|string|vector|map|sort|max|min|abs|size|begin|end|define)\b/g, '<span class="kw">$1</span>')
-      .replace(/\b(\d+)\b/g, '<span class="nu">$1</span>')
-      .replace(/\b([A-Za-z_]\w*)(?=\s*\()/g, '<span class="fn">$1</span>');
+    const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(\b\d+\b)|(\b[A-Za-z_]\w*)/g;
+    let out = '', last = 0, m;
+    while ((m = re.exec(code))) {
+      out += escH(code.slice(last, m.index));
+      let cls = null, val = m[0];
+      if (m[1]) { cls = 'cm'; }
+      else if (m[2]) { cls = 'st'; }
+      else if (m[3]) { cls = 'nu'; }
+      else if (m[4]) {
+        if (KW.test(val)) cls = 'kw';
+        else if (/^\s*\(/.test(code.slice(m.index + val.length))) cls = 'fn';
+        else cls = null;
+      }
+      if (cls) out += '<span class="' + cls + '">' + escH(val) + '</span>';
+      else out += escH(val);
+      last = m.index + m[0].length;
+      if (m.index === re.lastIndex) re.lastIndex++;
+    }
+    out += escH(code.slice(last));
+    return out;
   }
   function stripFence(s) {
     return String(s || '').replace(/^\s*```[a-zA-Z]*\s*\n?([\s\S]*?)```\s*$/g, '$1').trim();
@@ -198,6 +260,7 @@
     initAudio();
     av.setAmpGetter(ampGetter);
     window.__teacher = av;
+    api.onProgress(handleProgress);
   }
 
   $('pickBtn').onclick = async () => {
@@ -213,6 +276,7 @@
     $('runBtn').disabled = true;
     $('runBtn').innerHTML = '<span class="spin"></span> 讲解中…';
     $('caption').textContent = '正在读取题目并生成讲解…';
+    showProg(0, '准备…');
     try {
       const res = await api.runTeach(cfg, filePath);
       if (!res || !res.ok) { toast('讲解失败：' + (res && res.error || '未知错误')); return; }
@@ -222,6 +286,7 @@
     } finally {
       $('runBtn').disabled = false;
       $('runBtn').textContent = '开始讲解';
+      hideProg();
     }
   };
 

@@ -15,19 +15,33 @@ function nextVersion(dataDir, cfg) {
   return 'V1.0.' + cur;
 }
 
-async function run(dataDir, cfg, filePath, log) {
+async function run(dataDir, cfg, filePath, log, progress) {
   const logMsg = (m) => { if (log) log(m); };
+  const prog = (phase, pct, detail) => { try { if (progress) progress({ phase, pct, detail }); } catch (e) {} };
   config.save(dataDir, cfg);
   try {
-    logMsg('读取题目 ' + path.basename(filePath) + ' …');
+    prog('read', 4, '读取题目 ' + path.basename(filePath) + ' …');
     const info = await parseFile.read(filePath);
+    prog('analyze', 15, '模型分析中（约 30~60 秒，请稍候）…');
     logMsg('模型分析中（结合你的学习档案）…');
     const memctx = memory.weakContext(dataDir);
     const model = await analyze.analyze(cfg, info, memctx);
-    logMsg('生成讲解语音（' + (model.teaching || []).length + ' 段）…');
-    const audio = await tts.synthesize(path.join(dataDir, 'tts'), cfg, model.teaching || []);
+    const segs = model.teaching || [];
+    prog('tts', 25, '合成讲解语音…');
+    logMsg('生成讲解语音（' + segs.length + ' 段）…');
+    const ttsDir = path.join(dataDir, 'tts');
+    fs.mkdirSync(ttsDir, { recursive: true });
+    const audio = [];
+    for (let i = 0; i < segs.length; i++) {
+      const t = String(segs[i] || '').trim();
+      if (!t) continue;
+      prog('tts', 25 + Math.round(70 * (i / Math.max(1, segs.length))), '合成语音 ' + (i + 1) + '/' + segs.length);
+      audio.push(await tts.segment(ttsDir, cfg.teacherVoice, cfg.speechRate || 1, t, i));
+    }
+    prog('tts', 95, '语音已就绪，整理讲解…');
     const version = nextVersion(dataDir, cfg);
     memory.add(dataDir, { title: model.title || info.name, knowledgePoints: model.knowledgePoints || [] });
+    prog('done', 100, '讲解已就绪');
     return {
       ok: true, version, title: model.title || info.name, fileName: info.name,
       code: model.code || '', solution: model.solution || '',

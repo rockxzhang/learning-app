@@ -23,9 +23,9 @@ button{cursor:pointer}
 .version{color:var(--mut);font-size:12px}
 
 /* main layout */
-.main{display:grid;grid-template-columns:1.1fr 1fr;gap:10px;padding:10px;overflow:hidden}
-.left{display:grid;grid-template-rows:auto 1fr;min-width:0}
-.right{display:grid;grid-template-rows:1.1fr 1.3fr;min-width:0}
+.main{display:grid;grid-template-columns:1.1fr 1fr;gap:10px;padding:10px;overflow:hidden;min-height:0;min-width:0}
+.left{display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0}
+.right{display:grid;grid-template-rows:1.1fr 1.3fr;min-width:0;min-height:0}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
 .panel-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--mut)}
 .panel-head .tag{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-size:12px;color:var(--fg)}
@@ -60,9 +60,9 @@ button{cursor:pointer}
 
 /* teacher panel */
 .teacher{display:grid;grid-template-columns:auto 1fr;gap:12px;flex:1;min-height:0}
-.avatar-wrap{display:flex;align-items:flex-end;justify-content:center;min-width:190px}
-.avatar-wrap svg{width:190px;height:230px}
-.speak-area{display:flex;flex-direction:column;min-width:0}
+.avatar-wrap{display:flex;align-items:flex-end;justify-content:center;min-width:190px;min-height:0}
+.avatar-wrap svg{width:190px;height:230px;max-height:100%;flex-shrink:0}
+.speak-area{display:flex;flex-direction:column;min-width:0;min-height:0}
 .caption{flex:1;min-height:0;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:18px;line-height:1.8;overflow:auto;color:#fff;text-align:left}
 .caption .word{color:var(--mut)}
 .caption .word.on{color:#fff;background:var(--acc);border-radius:4px}

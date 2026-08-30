@@ -349,5 +349,9 @@
     toastTimer = setTimeout(() => b.classList.remove('show'), 2600);
   }
 
+  // 供自测/调试访问（不影响正常使用）
+  window.__renderCode = renderCode;
+  window.__highlightCodeLines = highlightCodeLines;
+
   boot();
 })();

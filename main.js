@@ -5,6 +5,10 @@ const fs = require('fs');
 
 const services = require('./services/index');
 
+// 崩溃兜底：捕获未处理异常/拒绝，记录原因，避免整个应用“直接结束”
+process.on('uncaughtException', (e) => { console.error('[main] uncaughtException:', e && (e.stack || e.message) || e); });
+process.on('unhandledRejection', (e) => { console.error('[main] unhandledRejection:', e && (e.stack || e.message) || e); });
+
 let win;
 let overlayWin = null;
 function createWindow() {

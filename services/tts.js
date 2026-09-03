@@ -91,22 +91,94 @@ async function segment(dir, voice, rateMul, text, idx, retries = 8) {
   throw lastErr;
 }
 
-// 合成整段讲解；teaching 为 [{text,from,to}] 或字符串；段间留间隔避免限流
+// 复用一条 WS 连接合成：发送一条 SSML 后等待 turn.end 收取该段音频
+function openSession(voice, ratePct) {
+  return new Promise((resolve, reject) => {
+    const url = `${WSS_BASE}&ConnectionId=${uuidHex()}&Sec-MS-GEC=${secMsGec()}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}`;
+    const ws = new WebSocket(url, {
+      headers: {
+        'Pragma': 'no-cache', 'Cache-Control': 'no-cache',
+        'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0',
+        'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept-Language': 'en-US,en;q=0.9',
+        'Cookie': `muid=${muid()};`,
+      },
+    });
+    let chunks = [], res = null, rej = null, timer = null;
+    const clear = () => { if (timer) { clearTimeout(timer); timer = null; } };
+    ws.on('open', () => {
+      ws.send(`X-Timestamp:${dateStr()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"true","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}`);
+      resolve({
+        send(text) {
+          return new Promise((r, j) => {
+            res = r; rej = j; chunks = [];
+            clear();
+            timer = setTimeout(() => { if (rej) { const rj = rej; res = rej = null; rj(new Error('语音合成超时（网络慢，请重试）')); } }, 12000);
+            ws.send(`X-RequestId:${uuidHex()}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${dateStr()}Z\r\nPath:ssml\r\n\r\n${mkssml(voice, ratePct, text)}`);
+          });
+        },
+        close() { clear(); try { ws.close(); } catch (e) {} },
+      });
+    });
+    ws.on('message', (data, isBinary) => {
+      if (!isBinary) {
+        if (data.toString('utf8').indexOf('turn.end') >= 0) { const b = Buffer.concat(chunks); if (res) { const r = res; res = rej = null; clear(); r(b); } }
+        return;
+      }
+      if (data.length < 2) return;
+      const h = data.readUInt16BE(0);
+      if (h > data.length) return;
+      chunks.push(data.slice(h + 2));
+    });
+    ws.on('error', (e) => { clear(); if (rej) rej(e); else reject(e); });
+    ws.on('close', () => { clear(); if (rej) rej(new Error('语音连接中断（网络波动，请重试）')); });
+  });
+}
+
+// 合成整段讲解：会话复用(一条连接逐段合成)，段内重试，连接断了重开续传(不丢段)
 async function synthesize(dir, cfg, teaching, onProgress) {
   fs.mkdirSync(dir, { recursive: true });
-  const results = [];
   const segs = teaching.map((s) => (typeof s === 'string' ? { text: s, from: null, to: null } : s));
-  for (let i = 0; i < segs.length; i++) {
-    const s = segs[i] || {};
-    const t = String(s.text || '').trim();
-    if (!t) continue;
-    if (onProgress) try { onProgress(i, segs.length); } catch (e) {}
-    const a = await segment(dir, cfg.teacherVoice, cfg.speechRate || 1, t, i);   // 重试直到成功；不静默丢段
-    a.from = s.from == null ? null : Number(s.from);
-    a.to = s.to == null ? null : Number(s.to);
-    results.push(a);
-    await delay(280);
+  const results = [];
+  let idx = 0, reopenLimit = 6;
+
+  while (idx < segs.length) {
+    let session = null;
+    try {
+      session = await openSession(cfg.teacherVoice, rateToPct(cfg.speechRate || 1));
+    } catch (e) {
+      if (--reopenLimit <= 0) throw new Error('暂时连不上语音服务：' + ((e && e.message) || e));
+      await delay(800);
+      continue;
+    }
+    try {
+      while (idx < segs.length) {
+        const s = segs[idx] || {};
+        const t = String(s.text || '').trim();
+        if (!t) { idx++; continue; }
+        if (onProgress) try { onProgress(idx, segs.length); } catch (e) {}
+        let buf = null, lastErr = null;
+        for (let a = 0; a < 5; a++) {
+          try { const b = await session.send(t); if (b && b.length >= 200) { buf = b; break; } lastErr = new Error('空音频(' + (b ? b.length : 0) + ')'); }
+          catch (e) { lastErr = e; break; }   // 连接异常，交给外层重开
+          await delay(500 + a * 400);
+        }
+        if (!buf || buf.length < 200) throw lastErr || new Error('语音合成失败（请重试）');
+        const fp = path.join(dir, 'seg_' + idx + '.mp3');
+        fs.writeFileSync(fp, buf);
+        results[idx] = { text: t, path: fp, size: buf.length, boundaries: [], from: s.from == null ? null : Number(s.from), to: s.to == null ? null : Number(s.to) };
+        idx++;
+        await delay(180);
+      }
+      session.close();
+      break;
+    } catch (e) {
+      try { if (session) session.close(); } catch (e2) {}
+      if (--reopenLimit <= 0) throw e;   // 重开会话上限，防止死循环，也避免无限重试
+      await delay(600);
+    }
   }
-  return results;
+  return results.filter(Boolean);
 }
 module.exports = { synthesize, segment };
+

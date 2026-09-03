@@ -342,13 +342,28 @@
   function buildDocHtml(res) {
     const kp = (res.knowledgePoints || []).map((k) => '<font color="#b06a00">' + escH2(k) + '</font>').join('、');
     const teach = (res.teaching || []).map((t) => (t && t.text) || t).map((t, i) => '<p><b>' + (i + 1) + '.</b> ' + escH2(t) + '</p>').join('');
-    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escH2(res.title || '讲解') + '</title>'
-      + '<style>body{font:15px/1.75 微软雅黑;color:#333;max-width:800px;margin:24px auto;padding:0 16px}h1{color:#1a3b8f}h2{color:#1a3b8f;border-bottom:1px solid #ddd;padding-bottom:4px}pre{background:#f4f6fb;padding:12px;border-radius:8px;overflow:auto;font:13px Consolas,monospace;color:#1c2b4a}</style></head><body>'
-      + '<h1>' + escH2(res.title || '讲解') + '</h1>'
+    const title = escH2(res.title || '讲解');
+    return '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>' + title + '</title>'
+      + '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->'
+      + '<style>'
+      + '@page { size: A4; margin: 22mm 20mm; }'
+      + 'body{font-family:"微软雅黑","SimSun",serif;font-size:11pt;line-height:1.7;color:#222;max-width:100%;}'
+      + 'h1{font-size:22pt;color:#1a3b8f;text-align:center;margin:0 0 6mm;padding-bottom:4mm;border-bottom:2px solid #1a3b8f;}'
+      + 'h2{font-size:15pt;color:#1a3b8f;margin:14px 0 6px;padding-left:8px;border-left:4px solid #1a3b8f;}'
+      + 'p{text-align:justify;}'
+      + 'pre{background:#f4f6fb;padding:10px;border:1px solid #dde3f0;font:10pt Consolas,monospace;color:#1c2b4a;white-space:pre-wrap;word-break:break-word;}'
+      + 'table{border-collapse:collapse;} th,td{border:1px solid #ccc;padding:4px 8px;}'
+      + 'code{font-family:Consolas,monospace;font-size:10pt;}'
+      + '.meta{color:#777;font-size:10pt;text-align:center;margin-bottom:10px}'
+      + '.foot{position:fixed;bottom:6px;left:0;right:0;text-align:center;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:4px;}'
+      + '</style></head><body>'
+      + '<h1>' + title + '</h1>'
+      + '<p class="meta">张老师随身讲 · 自动生成讲解文档</p>'
       + '<p><b>涉及知识点：</b>' + kp + '</p>'
       + '<h2>一、解题思路</h2>' + mdToHtml(res.solution || '')
       + '<h2>二、讲解内容</h2>' + teach
       + '<h2>三、参考代码</h2><pre>' + escH2(stripFence(res.code || '')) + '</pre>'
+      + '<div class="foot">张老师随身讲</div>'
       + '</body></html>';
   }
   $('dlCodeBtn').onclick = async () => {

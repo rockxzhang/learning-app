@@ -6,3 +6,4 @@ Thumbs.db
 .DS_Store
 services/api.key
 *.key
+build/appver.json

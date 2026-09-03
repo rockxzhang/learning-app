@@ -30,18 +30,9 @@ async function run(dataDir, cfg, filePath, log, progress) {
     prog('tts', 25, '合成讲解语音…');
     logMsg('生成讲解语音（' + segs.length + ' 段）…');
     const ttsDir = path.join(dataDir, 'tts');
-    fs.mkdirSync(ttsDir, { recursive: true });
-    const audio = [];
-    for (let i = 0; i < segs.length; i++) {
-      const s = segs[i] || {};
-      const t = String(s.text || '').trim();
-      if (!t) continue;
-      prog('tts', 25 + Math.round(70 * (i / Math.max(1, segs.length))), '合成语音 ' + (i + 1) + '/' + segs.length);
-      const a = await tts.segment(ttsDir, cfg.teacherVoice, cfg.speechRate || 1, t, i);
-      a.from = s.from == null ? null : Number(s.from);
-      a.to = s.to == null ? null : Number(s.to);
-      audio.push(a);
-    }
+    const audio = await tts.synthesize(ttsDir, cfg, segs, (i, total) => {
+      prog('tts', 25 + Math.round(70 * (i / Math.max(1, total))), '合成语音 ' + (i + 1) + '/' + total);
+    });
     prog('tts', 95, '语音已就绪，整理讲解…');
     const version = nextVersion(dataDir, cfg);
     memory.add(dataDir, { title: model.title || info.name, knowledgePoints: model.knowledgePoints || [] });

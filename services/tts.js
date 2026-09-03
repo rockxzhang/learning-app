@@ -1,4 +1,5 @@
 // services/tts.js - 纯 Node 实现微软 Edge TTS（带 Sec-MS-GEC 签名），自然中文语音
+// 说明：Edge TTS 端点对快速连续建连会间歇返回 0 字节（限流），这里做「段内重试+退避+段间间隔」提升可靠性。
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -29,8 +30,6 @@ function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').
 function mkssml(voice, ratePct, text) {
   return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='${voice}'><prosody pitch='+0Hz' rate='${ratePct}' volume='+0%'>${esc(text)}</prosody></voice></speak>`;
 }
-
-// rateMul: 1.0 正常，1.2=+20%，0.8=-20%
 function rateToPct(mul) {
   const p = Math.round(((mul || 1) - 1) * 100);
   return (p >= 0 ? '+' : '') + p + '%';
@@ -41,12 +40,10 @@ function synthOnce(voice, ratePct, text) {
     const url = `${WSS_BASE}&ConnectionId=${uuidHex()}&Sec-MS-GEC=${secMsGec()}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}`;
     const ws = new WebSocket(url, {
       headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache', 'Cache-Control': 'no-cache',
         'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0',
-        'Accept-Encoding': 'gzip, deflate, br, zstd',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept-Language': 'en-US,en;q=0.9',
         'Cookie': `muid=${muid()};`,
       },
     });
@@ -63,11 +60,7 @@ function synthOnce(voice, ratePct, text) {
       ws.send(`X-RequestId:${uuidHex()}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${dateStr()}Z\r\nPath:ssml\r\n\r\n${mkssml(voice, ratePct, text)}`);
     });
     ws.on('message', (data, isBinary) => {
-      if (!isBinary) {
-        const s = data.toString('utf8');
-        if (s.indexOf('turn.end') >= 0) settle(null, chunks);
-        return;
-      }
+      if (!isBinary) { const s = data.toString('utf8'); if (s.indexOf('turn.end') >= 0) settle(null, chunks); return; }
       if (data.length < 2) return;
       const headerLen = data.readUInt16BE(0);
       if (headerLen > data.length) return;
@@ -78,21 +71,41 @@ function synthOnce(voice, ratePct, text) {
   });
 }
 
-async function segment(dir, voice, rateMul, text, idx) {
+function delay(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+// 合成单段：重试最多 8 次（退避递增），仍失败则抛出（不静默丢段）
+async function segment(dir, voice, rateMul, text, idx, retries = 8) {
   const outPath = path.join(dir, 'seg_' + idx + '.mp3');
-  const buf = await synthOnce(voice, rateToPct(rateMul), text);
-  if (!buf || buf.length < 200) throw new Error('TTS 未生成有效音频（长度 ' + (buf ? buf.length : 0) + '）');
-  fs.writeFileSync(outPath, buf);
-  return { text, path: outPath, size: buf.length, boundaries: [] };
+  let lastErr = null;
+  for (let a = 0; a < retries; a++) {
+    try {
+      const buf = await synthOnce(voice, rateToPct(rateMul), text);
+      if (buf && buf.length >= 200) {
+        fs.writeFileSync(outPath, buf);
+        return { text, path: outPath, size: buf.length, boundaries: [] };
+      }
+      lastErr = new Error('TTS 未生成有效音频（长度 ' + (buf ? buf.length : 0) + '）');
+    } catch (e) { lastErr = e; }
+    await delay(600 + a * 500);
+  }
+  throw lastErr;
 }
 
-async function synthesize(dir, cfg, teaching) {
+// 合成整段讲解；teaching 为 [{text,from,to}] 或字符串；段间留间隔避免限流
+async function synthesize(dir, cfg, teaching, onProgress) {
   fs.mkdirSync(dir, { recursive: true });
   const results = [];
-  for (let i = 0; i < teaching.length; i++) {
-    const t = String(teaching[i] || '').trim();
+  const segs = teaching.map((s) => (typeof s === 'string' ? { text: s, from: null, to: null } : s));
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i] || {};
+    const t = String(s.text || '').trim();
     if (!t) continue;
-    results.push(await segment(dir, cfg.teacherVoice, cfg.speechRate || 1, t, i));
+    if (onProgress) try { onProgress(i, segs.length); } catch (e) {}
+    const a = await segment(dir, cfg.teacherVoice, cfg.speechRate || 1, t, i);   // 重试直到成功；不静默丢段
+    a.from = s.from == null ? null : Number(s.from);
+    a.to = s.to == null ? null : Number(s.to);
+    results.push(a);
+    await delay(280);
   }
   return results;
 }

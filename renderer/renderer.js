@@ -88,11 +88,13 @@
     if (!seg) return;
     $('runBtn').textContent = '讲解中';           // 正在讲解 -> 讲解中(不可点)
     $('runBtn').disabled = true;
-    audioEl.src = fileUrl(seg.path);
-    audioEl.playbackRate = Number($('rate').value || 1);
     highlightTranscript();
     highlightCodeLines(seg.from, seg.to);
-    if (doPlay) audioEl.play().catch(() => {});
+    if (seg.path) {
+      audioEl.src = fileUrl(seg.path);
+      audioEl.playbackRate = Number($('rate').value || 1);
+      if (doPlay) audioEl.play().catch(() => {});
+    }
   }
 
   // ---- 讲稿（唯一字幕，当前句高亮）----

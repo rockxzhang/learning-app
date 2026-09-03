@@ -12,10 +12,14 @@ process.on('unhandledRejection', (e) => { console.error('[main] unhandledRejecti
 let win;
 let overlayWin = null;
 function createWindow() {
+  const wa = screen.getPrimaryDisplay().workAreaSize;   // 铺满工作区 = 默认最大化
   win = new BrowserWindow({
-    width: 1280, height: 840, minWidth: 980, minHeight: 640,
+    width: wa.width, height: wa.height,
+    resizable: false,                 // 固定窗口，不可拖动缩放/缩小
+    show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
+  win.once('ready-to-show', () => { try { win.maximize(); } catch (e) {} win.show(); });
   // 渲染层 console / 错误 透传到主进程 stdout（便于排查）
   win.webContents.on('console-message', (e, level, message, line, sourceId) => {
     console.log('[renderer] ' + message);

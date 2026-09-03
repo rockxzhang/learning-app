@@ -113,7 +113,7 @@ function openSession(voice, ratePct) {
           return new Promise((r, j) => {
             res = r; rej = j; chunks = [];
             clear();
-            timer = setTimeout(() => { if (rej) { const rj = rej; res = rej = null; rj(new Error('语音合成超时（网络慢，请重试）')); } }, 12000);
+            timer = setTimeout(() => { if (rej) { const rj = rej; res = rej = null; rj(new Error('语音合成超时（网络慢，请重试）')); } }, 18000);
             ws.send(`X-RequestId:${uuidHex()}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${dateStr()}Z\r\nPath:ssml\r\n\r\n${mkssml(voice, ratePct, text)}`);
           });
         },
@@ -140,7 +140,7 @@ async function synthesize(dir, cfg, teaching, onProgress) {
   fs.mkdirSync(dir, { recursive: true });
   const segs = teaching.map((s) => (typeof s === 'string' ? { text: s, from: null, to: null } : s));
   const results = [];
-  let idx = 0, reopenLimit = 6;
+  let idx = 0, reopenLimit = 10;
 
   while (idx < segs.length) {
     let session = null;
@@ -158,7 +158,7 @@ async function synthesize(dir, cfg, teaching, onProgress) {
         if (!t) { idx++; continue; }
         if (onProgress) try { onProgress(idx, segs.length); } catch (e) {}
         let buf = null, lastErr = null;
-        for (let a = 0; a < 5; a++) {
+        for (let a = 0; a < 8; a++) {
           try { const b = await session.send(t); if (b && b.length >= 200) { buf = b; break; } lastErr = new Error('空音频(' + (b ? b.length : 0) + ')'); }
           catch (e) { lastErr = e; break; }   // 连接异常，交给外层重开
           await delay(500 + a * 400);

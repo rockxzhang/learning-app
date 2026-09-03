@@ -30,9 +30,16 @@ async function run(dataDir, cfg, filePath, log, progress) {
     prog('tts', 25, '合成讲解语音…');
     logMsg('生成讲解语音（' + segs.length + ' 段）…');
     const ttsDir = path.join(dataDir, 'tts');
-    const audio = await tts.synthesize(ttsDir, cfg, segs, (i, total) => {
-      prog('tts', 25 + Math.round(70 * (i / Math.max(1, total))), '合成语音 ' + (i + 1) + '/' + total);
-    });
+    // TTS 偶发失败（Edge 不稳）：整体重试最多 3 次，确保「组完」
+    let audio = null, ttsErr = null;
+    for (let attempt = 0; attempt < 3 && !audio; attempt++) {
+      try {
+        audio = await tts.synthesize(ttsDir, cfg, segs, (i, total) => {
+          prog('tts', 25 + Math.round(70 * (i / Math.max(1, total))), '合成语音 ' + (i + 1) + '/' + total);
+        });
+      } catch (e) { ttsErr = e; if (attempt < 2) logMsg('合成失败，重试中…'); await new Promise((r) => setTimeout(r, 700 + attempt * 600)); }
+    }
+    if (!audio) throw ttsErr || new Error('语音合成失败');
     prog('tts', 95, '语音已就绪，整理讲解…');
     const version = nextVersion(dataDir, cfg);
     memory.add(dataDir, { title: model.title || info.name, knowledgePoints: model.knowledgePoints || [] });

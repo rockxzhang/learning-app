@@ -94,7 +94,7 @@ button{cursor:pointer}
 .avatar-wrap svg:not(.t-mouth){width:158px;height:208px;max-height:100%;flex-shrink:0}
 /* 老师动画场景：撑满左列(与黑板同高), 老师半身(cover裁切), 讲台在下身下方且稍大 */
 .t-box{position:relative;width:200px;height:100%;min-height:0;flex:none;overflow:hidden}
-.t-pose{position:absolute;left:50%;bottom:20%;transform:translateX(-50%);width:72%;object-fit:contain;will-change:transform}
+.t-pose{position:absolute;left:50%;bottom:calc(20% + 68px);transform:translateX(-50%) scale(1.5);transform-origin:center bottom;width:72%;object-fit:contain;will-change:transform}
 .t-podium{position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:80%;height:38%;background:linear-gradient(180deg,#9a7548,#6f4e2c);border-radius:10px 10px 0 0;box-shadow:0 5px 12px rgba(0,0,0,.5)}
 .t-podium:before{content:"";position:absolute;left:-8px;right:-8px;top:-12px;height:18px;background:linear-gradient(180deg,#c39a67,#8a6238);border-radius:9px;box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .t-podium:after{content:"信奥讲堂";position:absolute;left:0;right:0;top:30%;text-align:center;color:rgba(255,236,190,.62);font-family:"Kaiti","STKaiti","Microsoft YaHei",cursive;font-size:20px;letter-spacing:6px;text-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:none}

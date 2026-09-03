@@ -24,7 +24,10 @@ function createWindow() {
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);   // 隐藏 File/Edit/View/Window/Help 默认菜单
+  createWindow();
+});
 app.on('window-all-closed', () => app.quit());
 
 const DATA_DIR = path.join(app.getPath('userData'), 'data');

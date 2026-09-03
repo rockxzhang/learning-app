@@ -21,8 +21,11 @@ const DEFAULTS = {
 function file(dir) { return path.join(dir, 'config.json'); }
 
 function load(dir) {
-  try { return Object.assign({}, DEFAULTS, JSON.parse(fs.readFileSync(file(dir), 'utf8'))); }
-  catch (e) { return Object.assign({}, DEFAULTS); }
+  try {
+    const merged = Object.assign({}, DEFAULTS, JSON.parse(fs.readFileSync(file(dir), 'utf8')));
+    merged.teacherVoice = DEFAULTS.teacherVoice;   // 讲解配音固定为阳光男声，不随用户设置覆盖
+    return merged;
+  } catch (e) { return Object.assign({}, DEFAULTS); }
 }
 function save(dir, cfg) {
   fs.writeFileSync(file(dir), JSON.stringify(Object.assign({}, DEFAULTS, cfg), null, 2), 'utf8');

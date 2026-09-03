@@ -164,16 +164,16 @@
     const box = $('code');
     const raw = String(code || '');
     const lines = stripFence(raw).split('\n');
-    box.innerHTML = lines.map((l, i) => '<div class="cl" data-line="' + (i + 1) + '">' + (hl(l) || '&nbsp;') + '</div>').join('');
+    box.innerHTML = lines.map((l, i) => '<div class="cl-row" data-line="' + (i + 1) + '"><span class="cl-no">' + (i + 1) + '</span><div class="cl">' + (hl(l) || '&nbsp;') + '</div></div>').join('');
     if (!raw.trim()) box.innerHTML = '<span class="empty">未生成代码</span>';
   }
   function highlightCodeLines(from, to) {
-    const lines = document.querySelectorAll('#code .cl');
-    if (lines.length) for (let i = 0; i < lines.length; i++) lines[i].classList.remove('active');
+    const rows = document.querySelectorAll('#code .cl-row');
+    if (rows.length) for (let i = 0; i < rows.length; i++) rows[i].classList.remove('active');
     if (from == null) return;
     let first = null;
     for (let i = from; i <= (to == null ? from : to); i++) {
-      const el = lines[i - 1];
+      const el = rows[i - 1];
       if (el) { el.classList.add('active'); if (!first) first = el; }
     }
     if (first) first.scrollIntoView({ block: 'nearest' });

@@ -58,9 +58,11 @@ button{cursor:pointer}
 /* code */
 #code{font-family:'JetBrains Mono',Consolas,monospace;font-size:12.5px;line-height:1.62;padding:0;border-radius:0}
 .coder{overflow:auto;height:100%;padding:8px 0}
-.cl{display:block;white-space:pre;min-height:1.5em;padding:0 13px;border-left:3px solid transparent;transition:background .15s,border-color .15s,color .15s}
-.cl:nth-child(even){background:rgba(255,255,255,.015)}
-.cl.active{background:rgba(56,189,248,.16);border-left:3px solid var(--acc)}
+.cl-row{display:flex;min-height:1.5em;border-left:3px solid transparent;transition:background .15s,border-color .15s}
+.cl-row:nth-child(even){background:rgba(255,255,255,.015)}
+.cl-row.active{background:rgba(56,189,248,.16);border-left:3px solid var(--acc)}
+.cl-no{flex:0 0 40px;text-align:right;padding:0 12px 0 0;color:rgba(138,160,200,.5);font-size:12px;user-select:none}
+.cl{flex:1;white-space:pre;padding-right:13px}
 .cl .cm{color:#7f9b7a;font-style:italic}
 .cl .kw{color:#7dd3fc}
 .cl .st{color:#86efac}
@@ -90,7 +92,6 @@ button{cursor:pointer}
 .t-box{position:relative;width:200px;height:268px;min-height:0;flex:none}
 .t-box.fit{transform:scale(min(1, 1))}
 .t-pose{position:absolute;left:50%;top:2%;transform:translateX(-50%);width:176px;aspect-ratio:1;object-fit:contain;will-change:transform}
-.t-mouth{position:absolute;left:93px;top:75px;transform:translate(-50%,-50%);width:34px;height:18px;pointer-events:none}
 .t-podium{position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,#9a7548,#6f4e2c);border-radius:10px 10px 0 0;box-shadow:0 5px 12px rgba(0,0,0,.5)}
 .t-podium:before{content:"";position:absolute;left:-8px;right:-8px;top:-8px;height:13px;background:linear-gradient(180deg,#b3895a,#8a6238);border-radius:8px;box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .t-podium .leg{position:absolute;bottom:0;width:15px;height:12px;background:#5f4527;border-radius:0 0 4px 4px}
@@ -105,7 +106,7 @@ button{cursor:pointer}
   border:9px solid #7a5835;
   border-radius:10px;
   padding:18px 16px;
-  font-size:15px;line-height:1.95;
+  font-size:16px;line-height:1.95;
   color:#f6f2e4;
   font-family:"Kaiti","STKaiti","KaiTi","Microsoft YaHei",cursive;
   box-shadow:inset 0 0 46px rgba(0,0,0,.5), 0 6px 16px rgba(0,0,0,.42);

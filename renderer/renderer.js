@@ -376,6 +376,19 @@
     else if (autoSpeak) loadSegment(index + 1, true);
   });
 
+  // ---- 代码字号调节：最小=默认 12.5px，最多 +5 号(到 17.5px) ----
+  const CFS_BASE = 12.5, CFS_MAX = 17.5;
+  let codeSize = CFS_BASE;
+  function setCodeSize(delta) {
+    codeSize = Math.max(CFS_BASE, Math.min(CFS_MAX, codeSize + delta));
+    $('code').style.setProperty('--cfs', codeSize + 'px');
+    $('codeMinus').disabled = codeSize <= CFS_BASE;
+    $('codePlus').disabled = codeSize >= CFS_MAX;
+  }
+  $('codeMinus').onclick = () => setCodeSize(-1);
+  $('codePlus').onclick = () => setCodeSize(1);
+  setCodeSize(0);
+
   // ---- toast ----
   let toastTimer = null;
   function toast(msg) {

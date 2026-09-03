@@ -46,22 +46,26 @@ button{cursor:pointer}
 .fname{color:var(--mut);font-size:12px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .version{color:var(--mut);font-size:12px}
 
-/* main layout */
-.main{display:grid;grid-template-columns:1.1fr 1fr;gap:12px;padding:12px;overflow:hidden;min-height:0;min-width:0}
+/* main layout: 左代码 2/5, 右讲解 3/5 */
+.main{display:grid;grid-template-columns:2fr 3fr;gap:12px;padding:12px;overflow:hidden;min-height:0;min-width:0}
 .left{display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0}
 .right{display:grid;grid-template-rows:1.05fr 1.35fr;min-width:0;min-height:0}
 .panel{background:linear-gradient(180deg,rgba(22,31,55,.55),rgba(13,20,40,.62));border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;min-height:0;box-shadow:0 8px 28px rgba(0,0,0,.28)}
 .panel-head{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px;color:var(--mut);letter-spacing:.4px;font-family:'Space Grotesk','Microsoft YaHei',sans-serif}
 .panel-head .tag{background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.28);border-radius:20px;padding:2px 10px;font-size:12px;color:#7dd3fc;letter-spacing:0}
+.fontctl{margin-left:auto;display:inline-flex;gap:4px}
+.mini{background:rgba(148,174,224,.08);border:1px solid var(--line);color:var(--fg);border-radius:6px;width:26px;height:22px;font-size:12px;line-height:1;cursor:pointer}
+.mini:hover{background:rgba(148,174,224,.18)}
+.mini:disabled{opacity:.4;cursor:not-allowed}
 .panel-body{flex:1;overflow:auto;min-height:0}
 
 /* code */
-#code{font-family:'JetBrains Mono',Consolas,monospace;font-size:12.5px;line-height:1.62;padding:0;border-radius:0}
+#code{font-family:'JetBrains Mono',Consolas,monospace;font-size:var(--cfs,12.5px);line-height:1.62;padding:0;border-radius:0}
 .coder{overflow:auto;height:100%;padding:8px 0}
 .cl-row{display:flex;min-height:1.5em;border-left:3px solid transparent;transition:background .15s,border-color .15s}
 .cl-row:nth-child(even){background:rgba(255,255,255,.015)}
 .cl-row.active{background:rgba(56,189,248,.16);border-left:3px solid var(--acc)}
-.cl-no{flex:0 0 40px;text-align:right;padding:0 12px 0 0;color:rgba(138,160,200,.5);font-size:12px;user-select:none}
+.cl-no{flex:0 0 40px;text-align:right;padding:0 12px 0 0;color:rgba(138,160,200,.5);font-size:calc(var(--cfs,12.5px) - 1px);user-select:none}
 .cl{flex:1;white-space:pre;padding-right:13px}
 .cl .cm{color:#7f9b7a;font-style:italic}
 .cl .kw{color:#7dd3fc}
@@ -168,7 +172,7 @@ button{cursor:pointer}
     <!-- 左：代码 -->
     <div class="left">
       <div class="panel">
-        <div class="panel-head">带注释的参考代码 <span class="tag" id="title1">—</span></div>
+        <div class="panel-head">带注释的参考代码 <span class="tag" id="title1">—</span><span class="fontctl"><button class="mini" id="codeMinus" title="缩小字号">A−</button><button class="mini" id="codePlus" title="放大字号">A+</button></span></div>
         <div class="panel-body"><div id="code" class="coder"><span class="empty">点击「开始讲解」生成带逐行注释的 C++ 代码</span></div></div>
       </div>
     </div>

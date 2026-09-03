@@ -261,7 +261,9 @@
     cfg = await api.cfgLoad();
     const cur = await api.versionCurrent();
     $('curVer').textContent = 'V1.0.' + (cur || cfg.baseVersion || 1000);
-    const av = window.teacher($('avatar'));
+    let avatarImg = null;
+    try { avatarImg = await api.getAvatarImage(); } catch (e) {}
+    const av = window.teacher($('avatar'), avatarImg);
     av.start();
     initAudio();
     av.setAmpGetter(ampGetter);

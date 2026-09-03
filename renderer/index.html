@@ -58,14 +58,31 @@ button{cursor:pointer}
 #solution table{border-collapse:collapse;margin:8px 0}
 #solution th,#solution td{border:1px solid var(--line);padding:5px 10px;font-size:13px}
 
-/* teacher panel: 头像独立固定(不随右侧滚动)，讲稿为唯一字幕，当前句高亮 */
-.teach-body{flex:1;min-height:0;display:grid;grid-template-columns:auto 1fr;gap:12px;padding:12px}
+/* teacher panel: 头像独立固定(不随右侧滚动)，讲解区做成黑板+粉笔字 */
+.teach-body{flex:1;min-height:0;display:grid;grid-template-columns:auto 1fr;gap:14px;padding:12px}
 .avatar-wrap{display:flex;align-items:flex-end;justify-content:center;min-width:150px;min-height:0;overflow:hidden}
 .avatar-wrap svg{width:160px;height:210px;max-height:100%;flex-shrink:0}
-.transcript{min-height:0;overflow:auto;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:14px;line-height:1.7;color:var(--mut)}
-.transcript .line{padding:4px 8px;border-radius:6px;border-left:3px solid transparent;cursor:default}
-.transcript .line.current{background:rgba(79,140,255,.18);color:#fff;border-left:3px solid var(--acc)}
-.transcript .line.done{color:#c4cfe3}
+.avatar-wrap img{max-width:100%;max-height:100%;object-fit:contain}
+/* 黑板 */
+.transcript{
+  min-height:0;overflow:auto;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(255,255,255,.07), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 22px),
+    #233a2a;
+  border:9px solid #7a5835;                         /* 木质边框 */
+  border-radius:10px;
+  padding:16px 14px;
+  font-size:15px;line-height:1.9;
+  color:#f6f2e4;                                    /* 粉笔白 */
+  font-family:"Kaiti","STKaiti","KaiTi","Microsoft YaHei",cursive;
+  box-shadow:inset 0 0 46px rgba(0,0,0,.5), 0 6px 16px rgba(0,0,0,.42);
+}
+.transcript .line{padding:6px 10px;border-radius:6px;cursor:default}
+.transcript .line.current{color:#fff;background:rgba(255,255,255,.09);box-shadow:inset 0 -2px 0 #ffd479}  /* 粉笔黄下划线 */
+.transcript .line.done{color:#c3cdb6}
+/* 黑板小粉笔槽 */
+.teach-body::after{content:"";grid-column:2;height:8px;margin-top:-6px;border-radius:4px;background:linear-gradient(180deg,#8a6a3c,#5f4527)}
 
 /* controls */
 .controls{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
@@ -131,7 +148,7 @@ button{cursor:pointer}
       </div>
 
       <div class="panel">
-        <div class="panel-head">数字人老师讲解 <span class="tag" id="kpoint"></span></div>
+        <div class="panel-head">张老师随身讲 <span class="tag" id="kpoint"></span></div>
         <div class="teach-body">
           <div class="avatar-wrap" id="avatar"></div>
           <div class="transcript" id="transcript"></div>

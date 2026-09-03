@@ -43,6 +43,20 @@ ipcMain.handle('file:pick', async () => {
   return r.canceled ? null : r.filePaths[0];
 });
 
+// 自定义老师头像：用户把 teacher.png/jpg 放到应用数据目录或 exe 旁边即可替换数字人
+ipcMain.handle('avatar:getImage', () => {
+  const exeDir = (() => { try { return path.dirname(app.getPath('exe')); } catch (e) { return __dirname; } })();
+  const cands = [
+    path.join(DATA_DIR, 'teacher.png'), path.join(DATA_DIR, 'teacher.jpg'),
+    path.join(app.getPath('userData'), 'teacher.png'),
+    path.join(exeDir, 'teacher.png'), path.join(exeDir, 'teacher.jpg'),
+  ];
+  for (const p of cands) {
+    try { if (fs.existsSync(p)) { const ext = path.extname(p).slice(1).toLowerCase(); return 'data:image/' + ext + ';base64,' + fs.readFileSync(p).toString('base64'); } } catch (e) {}
+  }
+  return null;
+});
+
 // 保存文件（下载代码/讲解）
 ipcMain.handle('file:save', async (e, defaultName, content, filterName, ext) => {
   const r = await dialog.showSaveDialog(win, {

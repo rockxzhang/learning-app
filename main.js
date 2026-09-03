@@ -1,5 +1,5 @@
-// main.js - Electron 主进程 for 数字人讲题
-const { app, BrowserWindow, ipcMain, dialog, desktopCapturer, screen } = require('electron');
+// main.js - Electron 主进程 for 张老师随身讲
+const { app, BrowserWindow, ipcMain, dialog, desktopCapturer, screen, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -85,9 +85,13 @@ ipcMain.handle('teach:run', async (e, cfg, filePath) => {
 ipcMain.handle('memory:profile', () => services.memory.profile(DATA_DIR));
 ipcMain.handle('memory:weak', (e, title, weakPoints) => services.memory.addWeak(DATA_DIR, title, weakPoints));
 
+// 界面显示的实际软件版本 = 构建版本（打包时写入 build/appver.json）；否则回退到基础版本
 ipcMain.handle('version:current', () => {
-  try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'version.json'), 'utf8')).current; }
-  catch (e) { return services.config.load(DATA_DIR).baseVersion; }
+  try {
+    const v = JSON.parse(fs.readFileSync(path.join(__dirname, 'build', 'appver.json'), 'utf8')).ver;
+    if (v) return v;
+  } catch (e) {}
+  return services.config.load(DATA_DIR).baseVersion;
 });
 
 // ---- 题目截图 ----

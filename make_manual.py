@@ -36,7 +36,7 @@ story = [
     Spacer(1, 8), P('一、安装 / 免安装运行', h2),
     ListFlowable([
         ListItem(P('安装版：双击 <b>张老师随身讲-V1.0.xxxx.exe</b> 安装，桌面/开始菜单生成「张老师随身讲」快捷方式。')),
-        ListItem(P('免安装版：解压 <b>张老师随身讲-免安装.zip</b>，进入 win-unpacked 文件夹，双击 <b>张老师随身讲.exe</b> 即可运行，不需要安装。')),
+        ListItem(P('免安装版：解压 <b>张老师随身讲-免安装.zip</b>，直接双击里面的 <b>张老师随身讲.exe</b> 即可运行，不需要安装。')),
     ], bulletType='bullet', fontName='CJK', leftIndent=14),
     P('系统要求：Windows 10/11 x64；运行讲解语音需要<font color="#c0392b">联网</font>（调用在线语音与 AI 模型）。', body),
     Spacer(1, 8), P('二、界面与左侧/右侧说明', h2),

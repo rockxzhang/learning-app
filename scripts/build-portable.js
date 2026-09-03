@@ -12,6 +12,7 @@ const outDir = path.join(ROOT, 'release', v);
 fs.mkdirSync(outDir, { recursive: true });
 console.log('便携版版本号：' + v);
 fs.writeFileSync(verFile, JSON.stringify({ current: ver + 1 }, null, 2), 'utf8');
+fs.writeFileSync(path.join(ROOT, 'build', 'appver.json'), JSON.stringify({ ver }, null, 2), 'utf8');
 
 execSync('npx electron-builder --win portable --publish never --config.directories.output=' + outDir.replace(/\\/g, '/'), {
   cwd: ROOT,

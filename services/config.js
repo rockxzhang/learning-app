@@ -12,7 +12,7 @@ const DEFAULTS = {
   llmEndpoint: 'https://api.deepseek.com/v1/chat/completions',
   llmApiKey: DEEPSEEK_API_KEY,
   llmModel: 'deepseek-v4-flash-vision-exp',   // 视觉模型，可看题图
-  teacherVoice: 'zh-CN-XiaoxiaoNeural',       // 自然中文女声（Edge TTS）
+  teacherVoice: 'zh-CN-YunxiNeural',       // 阳光男声（云希，明亮少年音；Edge TTS）
   speechRate: 1.0,                            // 语速倍率
   autoSpeak: true,                            // 生成后自动开始讲解
   baseVersion: 1000,                          // 软件版本号起始（显示 V1.0.1000），每次讲解/打包 +1

@@ -29,7 +29,7 @@ button{cursor:pointer}
 ::-webkit-scrollbar-thumb{background:rgba(148,174,224,.22);border-radius:9px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(148,174,224,.36)}
 ::-webkit-scrollbar-track{background:transparent}
-.app{display:grid;grid-template-rows:auto auto 1fr;height:100vh;position:relative;z-index:1}
+.app{display:flex;flex-direction:column;height:100vh;position:relative;z-index:1}
 
 /* header */
 .header{display:flex;align-items:center;gap:12px;padding:11px 18px;background:rgba(11,17,32,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);flex-wrap:wrap;position:relative;z-index:5}
@@ -46,8 +46,8 @@ button{cursor:pointer}
 .fname{color:var(--mut);font-size:12px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .version{color:var(--mut);font-size:12px}
 
-/* main layout: 左代码 2/5, 右讲解 3/5 */
-.main{display:grid;grid-template-columns:2fr 3fr;gap:12px;padding:12px;overflow:hidden;min-height:0;min-width:0}
+/* main layout: 左代码 2/5, 右讲解 3/5；flex:1 撑满整高，避免最大化后下方留空 */
+.main{flex:1 1 auto;min-height:0;min-width:0;display:grid;grid-template-columns:2fr 3fr;grid-template-rows:minmax(0,1fr);gap:12px;padding:12px;overflow:hidden}
 .left{display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0}
 .right{display:grid;grid-template-rows:1.05fr 1.35fr;min-width:0;min-height:0}
 .panel{background:linear-gradient(180deg,rgba(22,31,55,.55),rgba(13,20,40,.62));border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;min-height:0;box-shadow:0 8px 28px rgba(0,0,0,.28)}
@@ -92,10 +92,10 @@ button{cursor:pointer}
 .teach-body{flex:1;min-height:0;display:flex;gap:14px;padding:12px}
 .avatar-wrap{flex:0 0 205px;min-height:0;min-width:0;position:relative;display:flex;align-items:flex-end;justify-content:center}
 .avatar-wrap svg:not(.t-mouth){width:158px;height:208px;max-height:100%;flex-shrink:0}
-/* 老师动画场景：讲台拉宽拉高，顶面贴合腰部，人与讲台无空隙 */
-.t-box{position:relative;width:200px;height:268px;min-height:0;flex:none;overflow:hidden}
-.t-pose{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:196px;aspect-ratio:1;object-fit:contain;will-change:transform}
-.t-podium{position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:66%;height:132px;background:linear-gradient(180deg,#9a7548,#6f4e2c);border-radius:10px 10px 0 0;box-shadow:0 5px 12px rgba(0,0,0,.5)}
+/* 老师动画场景：撑满左列(与黑板同高), 老师半身(cover裁切), 讲台在下身下方且稍大 */
+.t-box{position:relative;width:200px;height:100%;min-height:0;flex:none;overflow:hidden}
+.t-pose{position:absolute;left:50%;bottom:20%;transform:translateX(-50%);width:72%;object-fit:contain;will-change:transform}
+.t-podium{position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:80%;height:38%;background:linear-gradient(180deg,#9a7548,#6f4e2c);border-radius:10px 10px 0 0;box-shadow:0 5px 12px rgba(0,0,0,.5)}
 .t-podium:before{content:"";position:absolute;left:-8px;right:-8px;top:-12px;height:18px;background:linear-gradient(180deg,#c39a67,#8a6238);border-radius:9px;box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .t-podium:after{content:"信奥讲堂";position:absolute;left:0;right:0;top:30%;text-align:center;color:rgba(255,236,190,.62);font-family:"Kaiti","STKaiti","Microsoft YaHei",cursive;font-size:20px;letter-spacing:6px;text-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:none}
 .t-podium .leg{position:absolute;bottom:0;width:16px;height:12px;background:#5f4527;border-radius:0 0 4px 4px}

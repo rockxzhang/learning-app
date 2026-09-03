@@ -126,12 +126,7 @@ button{cursor:pointer}
 .rate{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
 .rate select{background:rgba(7,11,22,.7);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:5px 8px}
 
-/* weak chips */
-.weakbox{display:flex;flex-wrap:wrap;gap:6px;padding:9px 12px;border-top:1px solid var(--line)}
-.weakbox .chip{background:rgba(148,174,224,.06);border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12px;color:var(--mut);cursor:pointer;transition:all .15s}
-.weakbox .chip:hover{border-color:var(--line2)}
-.weakbox .chip.active{background:rgba(240,165,74,.16);border-color:var(--warn);color:var(--warn)}
-.weakbox .hint{font-size:12px;color:var(--mut)}
+/* weak chips (已移除「标记知识点」功能) */
 
 /* log toast */
 .logbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(11,17,32,.92);border:1px solid var(--line);border-radius:12px;padding:9px 16px;font-size:12px;color:var(--fg);opacity:0;transition:opacity .2s;pointer-events:none;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:50;backdrop-filter:blur(8px)}
@@ -202,7 +197,6 @@ button{cursor:pointer}
           <button class="btn ghost" id="dlDocBtn" disabled>下载讲解</button>
           <button class="btn ghost" id="printBtn" disabled>打印讲解</button>
         </div>
-        <div class="weakbox" id="weakbox"><span class="hint">标记你这次没弄懂的知识点（点击切换），下次讲解会重点复习：</span></div>
       </div>
     </div>
   </div>

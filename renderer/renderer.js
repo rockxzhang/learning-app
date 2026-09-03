@@ -126,7 +126,6 @@
     $('code').innerHTML = '<span class="empty">点击「开始讲解」生成带逐行注释的 C++ 代码</span>';
     $('solution').innerHTML = '<span class="empty">讲解时会生成：题意分析、核心算法、复杂度、样例推演、易错点</span>';
     $('transcript').innerHTML = '<div class="line">请先选择题目并点「开始讲解」，老师会逐句讲给你听。</div>';
-    $('weakbox').innerHTML = '<span class="hint">标记你这次没弄懂的知识点（点击切换），下次讲解会重点复习：</span>';
     $('runBtn').textContent = '开始讲解';
     $('runBtn').disabled = !filePath;
     $('dlCodeBtn').disabled = true;
@@ -242,22 +241,7 @@
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   }
 
-  // ---- 薄弱点 ----
-  function renderWeak(kps) {
-    const box = $('weakbox');
-    box.innerHTML = '<span class="hint">标记你这次没弄懂的知识点（点击切换），下次讲解会重点复习：</span>';
-    (Array.isArray(kps) ? kps : []).forEach((k) => {
-      const chip = document.createElement('span');
-      chip.className = 'chip';
-      chip.textContent = k;
-      chip.onclick = () => {
-        chip.classList.toggle('active');
-        const weak = Array.from(box.querySelectorAll('.chip.active')).map((c) => c.textContent);
-        if (current) api.markWeak(current.title, weak);
-      };
-      box.appendChild(chip);
-    });
-  }
+  // ---- (已移除「标记知识点」功能) ----
 
   // ---- 主流程 ----
   async function boot() {
@@ -324,7 +308,6 @@
     $('solution').innerHTML = mdToHtml(res.solution) || '<span class="empty">未生成思路</span>';
     playlist = res.audio || [];
     renderTranscript();
-    renderWeak(res.knowledgePoints || []);
     $('dlCodeBtn').disabled = false;
     $('dlDocBtn').disabled = false;
     $('printBtn').disabled = false;

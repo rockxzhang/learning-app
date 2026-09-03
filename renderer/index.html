@@ -4,64 +4,88 @@
 <meta charset="utf-8">
 <title>张老师随身讲</title>
 <style>
-:root{--bg:#0f1420;--card:#171f30;--card2:#141b2b;--line:#26314a;--fg:#e8eef8;--mut:#9aa8c2;--acc:#4f8cff;--ok:#23b26b;--err:#ff5c6c;--warn:#f0a54a}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#070b16; --bg2:#0b1120; --card:rgba(22,31,55,.62); --card2:#0d1424;
+  --line:rgba(148,174,224,.14); --line2:rgba(148,174,224,.22);
+  --fg:#eaf2ff; --mut:#8aa0c8;
+  --acc:#38bdf8; --acc2:#6366f1; --ok:#22c55e; --warn:#f0a54a; --err:#f43f5e;
+  --glow:0 0 22px rgba(56,189,248,.18); --r:16px;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",sans-serif;overflow:hidden}
+html,body{height:100%}
+body{
+  background:linear-gradient(160deg,#070b16 0%,#0b1120 55%,#0d1230 100%);
+  color:var(--fg);
+  font-family:'DM Sans','Microsoft YaHei',sans-serif;
+  font-size:14px;line-height:1.6;overflow:hidden;position:relative;
+}
+/* 环境光斑 */
+body::before,body::after{content:"";position:fixed;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none}
+body::before{width:420px;height:420px;background:rgba(56,189,248,.16);top:-120px;left:-80px}
+body::after{width:520px;height:520px;background:rgba(99,102,241,.16);bottom:-180px;right:-120px}
 button{cursor:pointer}
-.app{display:grid;grid-template-rows:auto auto 1fr;height:100vh}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(148,174,224,.22);border-radius:9px}
+::-webkit-scrollbar-thumb:hover{background:rgba(148,174,224,.36)}
+::-webkit-scrollbar-track{background:transparent}
+.app{display:grid;grid-template-rows:auto auto 1fr;height:100vh;position:relative;z-index:1}
 
 /* header */
-.header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
-.header h1{font-size:16px}
-.header h1 small{color:var(--mut);font-size:12px;font-weight:400;margin-left:8px}
+.header{display:flex;align-items:center;gap:12px;padding:11px 18px;background:rgba(11,17,32,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);flex-wrap:wrap;position:relative;z-index:5}
+.header h1{font-family:'Space Grotesk','Microsoft YaHei',sans-serif;font-size:17px;letter-spacing:.3px;background:linear-gradient(90deg,#7dd3fc,#a5b4fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.header h1 small{color:var(--mut);font-size:12px;font-weight:400;margin-left:10px;letter-spacing:0}
 .spacer{flex:1}
-.btn{background:var(--acc);border:0;color:#fff;padding:7px 15px;border-radius:8px;font-size:13px}
-.btn:hover{filter:brightness(1.1)}
-.btn.ghost{background:var(--card2);border:1px solid var(--line);color:var(--fg)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.fname{color:var(--mut);font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn{background:linear-gradient(90deg,var(--acc),var(--acc2));border:0;color:#fff;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:var(--glow);transition:transform .12s ease,filter .15s ease}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn.ghost{background:rgba(148,174,224,.06);border:1px solid var(--line);color:var(--fg);box-shadow:none}
+.btn.ghost:hover{background:rgba(148,174,224,.12)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn .ico{vertical-align:middle;margin-right:5px}
+.fname{color:var(--mut);font-size:12px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .version{color:var(--mut);font-size:12px}
 
 /* main layout */
-.main{display:grid;grid-template-columns:1.1fr 1fr;gap:10px;padding:10px;overflow:hidden;min-height:0;min-width:0}
+.main{display:grid;grid-template-columns:1.1fr 1fr;gap:12px;padding:12px;overflow:hidden;min-height:0;min-width:0}
 .left{display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0}
-.right{display:grid;grid-template-rows:1.1fr 1.3fr;min-width:0;min-height:0}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-.panel-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--mut)}
-.panel-head .tag{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-size:12px;color:var(--fg)}
+.right{display:grid;grid-template-rows:1.05fr 1.35fr;min-width:0;min-height:0}
+.panel{background:linear-gradient(180deg,rgba(22,31,55,.55),rgba(13,20,40,.62));border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;min-height:0;box-shadow:0 8px 28px rgba(0,0,0,.28)}
+.panel-head{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px;color:var(--mut);letter-spacing:.4px;font-family:'Space Grotesk','Microsoft YaHei',sans-serif}
+.panel-head .tag{background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.28);border-radius:20px;padding:2px 10px;font-size:12px;color:#7dd3fc;letter-spacing:0}
 .panel-body{flex:1;overflow:auto;min-height:0}
 
 /* code */
-#code{font-family:Consolas,"JetBrains Mono",monospace;font-size:13px;line-height:1.6;padding:0;border-radius:0}
+#code{font-family:'JetBrains Mono',Consolas,monospace;font-size:12.5px;line-height:1.62;padding:0;border-radius:0}
 .coder{overflow:auto;height:100%;padding:8px 0}
-.cl{display:block;white-space:pre;min-height:1.5em;padding:0 12px;border-left:3px solid transparent;transition:background .15s,border-color .15s}
+.cl{display:block;white-space:pre;min-height:1.5em;padding:0 13px;border-left:3px solid transparent;transition:background .15s,border-color .15s,color .15s}
 .cl:nth-child(even){background:rgba(255,255,255,.015)}
-.cl.active{background:rgba(79,140,255,.18);border-left:3px solid var(--acc)}
-.cl .cm{color:#7a8c6a;font-style:italic}
-.cl .kw{color:#c792ea}
-.cl .st{color:#c3e88d}
-.cl .nu{color:#f78c6c}
-.cl .fn{color:#82aaff}
+.cl.active{background:rgba(56,189,248,.16);border-left:3px solid var(--acc)}
+.cl .cm{color:#7f9b7a;font-style:italic}
+.cl .kw{color:#7dd3fc}
+.cl .st{color:#86efac}
+.cl .nu{color:#fdba74}
+.cl .fn{color:#a5b4fc}
 
 /* markdown solution */
-#solution{padding:14px;font-size:14px;line-height:1.75}
-#solution h1,#solution h2,#solution h3{margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line);color:#fff}
-#solution h1{font-size:18px}#solution h2{font-size:16px}#solution h3{font-size:14px}
-#solution p{margin:6px 0}
+#solution{padding:16px;font-size:14px;line-height:1.78}
+#solution h1,#solution h2,#solution h3{margin:14px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line);color:#fff;font-family:'Space Grotesk','Microsoft YaHei',sans-serif;letter-spacing:.2px}
+#solution h1{font-size:19px}#solution h2{font-size:16px}#solution h3{font-size:14px}
+#solution p{margin:7px 0}
 #solution ul,#solution ol{margin:6px 0 6px 22px}
 #solution li{margin:3px 0}
 #solution strong{color:#ffd479}
-#solution code{background:#0a1120;border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-family:Consolas,monospace;font-size:13px;color:#c3e88d}
-#solution pre{background:#0a1120;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto}
+#solution code{background:rgba(56,189,248,.08);border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-family:Consolas,monospace;font-size:13px;color:#86efac}
+#solution pre{background:rgba(7,11,22,.7);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto}
 #solution pre code{background:none;border:0;padding:0;display:block;white-space:pre}
-#solution blockquote{border-left:3px solid var(--acc);padding:2px 10px;margin:8px 0;color:var(--mut)}
+#solution blockquote{border-left:3px solid var(--acc);padding:2px 12px;margin:8px 0;color:var(--mut)}
 #solution table{border-collapse:collapse;margin:8px 0}
 #solution th,#solution td{border:1px solid var(--line);padding:5px 10px;font-size:13px}
 
-/* teacher panel: 头像独立固定(不随右侧滚动)，讲解区做成黑板+粉笔字 */
+/* teacher panel: 头像独立固定，讲解区黑板+粉笔字 */
 .teach-body{flex:1;min-height:0;display:grid;grid-template-columns:auto 1fr;gap:14px;padding:12px}
-.avatar-wrap{display:flex;align-items:flex-end;justify-content:center;min-width:150px;min-height:0;overflow:hidden}
-.avatar-wrap svg{width:160px;height:210px;max-height:100%;flex-shrink:0}
+.avatar-wrap{display:flex;align-items:flex-end;justify-content:center;min-width:150px;min-height:0;overflow:hidden;filter:drop-shadow(0 6px 12px rgba(56,189,248,.22))}
+.avatar-wrap svg{width:158px;height:208px;max-height:100%;flex-shrink:0}
 .avatar-wrap img{max-width:100%;max-height:100%;object-fit:contain}
 /* 黑板 */
 .transcript{
@@ -69,46 +93,46 @@ button{cursor:pointer}
   background:
     radial-gradient(ellipse at 50% 120%, rgba(255,255,255,.07), transparent 62%),
     repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 22px),
-    #233a2a;
-  border:9px solid #7a5835;                         /* 木质边框 */
+    #22392a;
+  border:9px solid #7a5835;
   border-radius:10px;
-  padding:16px 14px;
-  font-size:15px;line-height:1.9;
-  color:#f6f2e4;                                    /* 粉笔白 */
+  padding:18px 16px;
+  font-size:15px;line-height:1.95;
+  color:#f6f2e4;
   font-family:"Kaiti","STKaiti","KaiTi","Microsoft YaHei",cursive;
   box-shadow:inset 0 0 46px rgba(0,0,0,.5), 0 6px 16px rgba(0,0,0,.42);
 }
 .transcript .line{padding:6px 10px;border-radius:6px;cursor:default}
-.transcript .line.current{color:#fff;background:rgba(255,255,255,.09);box-shadow:inset 0 -2px 0 #ffd479}  /* 粉笔黄下划线 */
+.transcript .line.current{color:#fff;background:rgba(255,255,255,.09);box-shadow:inset 0 -2px 0 #ffd479}
 .transcript .line.done{color:#c3cdb6}
-/* 黑板小粉笔槽 */
 .teach-body::after{content:"";grid-column:2;height:8px;margin-top:-6px;border-radius:4px;background:linear-gradient(180deg,#8a6a3c,#5f4527)}
 
 /* controls */
-.controls{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
-.controls .btn{padding:6px 13px}
+.controls{display:flex;align-items:center;gap:9px;padding:10px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.controls .btn{padding:7px 12px}
 .rate{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
-.rate select{background:#0a1120;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:4px 6px}
+.rate select{background:rgba(7,11,22,.7);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:5px 8px}
 
 /* weak chips */
-.weakbox{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-top:1px solid var(--line)}
-.weakbox .chip{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--mut);cursor:pointer}
-.weakbox .chip.active{background:rgba(240,165,74,.18);border-color:var(--warn);color:var(--warn)}
+.weakbox{display:flex;flex-wrap:wrap;gap:6px;padding:9px 12px;border-top:1px solid var(--line)}
+.weakbox .chip{background:rgba(148,174,224,.06);border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12px;color:var(--mut);cursor:pointer;transition:all .15s}
+.weakbox .chip:hover{border-color:var(--line2)}
+.weakbox .chip.active{background:rgba(240,165,74,.16);border-color:var(--warn);color:var(--warn)}
 .weakbox .hint{font-size:12px;color:var(--mut)}
 
 /* log toast */
-.logbar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--fg);opacity:0;transition:opacity .2s;pointer-events:none;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(11,17,32,.92);border:1px solid var(--line);border-radius:12px;padding:9px 16px;font-size:12px;color:var(--fg);opacity:0;transition:opacity .2s;pointer-events:none;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:50;backdrop-filter:blur(8px)}
 .logbar.show{opacity:1}
 
 .empty{color:var(--mut);font-size:13px;padding:20px;text-align:center}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--mut);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
-/* progress bar (正常流，位于头部下方一行，不遮挡) */
-.prog{background:var(--card);border-bottom:1px solid var(--line);padding:6px 16px;align-items:center;gap:10px;display:none}
+/* progress bar */
+.prog{background:rgba(11,17,32,.7);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:7px 18px;align-items:center;gap:10px;display:none;position:relative;z-index:4}
 .prog.bar{display:flex}
-.prog-bar{flex:1;height:7px;background:var(--card2);border-radius:7px;overflow:hidden}
-.prog-fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),#8bb0ff);border-radius:7px;transition:width .25s}
+.prog-bar{flex:1;height:7px;background:rgba(148,174,224,.1);border-radius:7px;overflow:hidden}
+.prog-fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:7px;transition:width .25s;box-shadow:0 0 12px rgba(56,189,248,.5)}
 .prog-fill.pulse{animation:progPulse 1.2s infinite}
 @keyframes progPulse{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
 .prog-text{font-size:12px;color:var(--mut);white-space:nowrap;min-width:150px}
@@ -154,10 +178,10 @@ button{cursor:pointer}
           <div class="transcript" id="transcript"></div>
         </div>
         <div class="controls">
-          <button class="btn ghost" id="prevBtn">上一句</button>
-          <button class="btn ghost" id="playBtn">播放 ▶</button>
-          <button class="btn ghost" id="pauseBtn">暂停</button>
-          <button class="btn ghost" id="nextBtn">下一句</button>
+          <button class="btn ghost" id="prevBtn"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>上一句</button>
+          <button class="btn ghost" id="playBtn"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20"/></svg>播放</button>
+          <button class="btn ghost" id="pauseBtn"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>暂停</button>
+          <button class="btn ghost" id="nextBtn"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>下一句</button>
           <span class="rate">语速
             <select id="rate"><option value="0.8">0.8x</option><option value="1" selected>1.0x</option><option value="1.2">1.2x</option><option value="1.5">1.5x</option></select>
           </span>

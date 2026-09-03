@@ -47,6 +47,7 @@ ipcMain.handle('file:pick', async () => {
 ipcMain.handle('avatar:getImage', () => {
   const exeDir = (() => { try { return path.dirname(app.getPath('exe')); } catch (e) { return __dirname; } })();
   const cands = [
+    path.join(__dirname, 'build', 'teacher.png'), path.join(__dirname, 'build', 'teacher.jpg'),
     path.join(DATA_DIR, 'teacher.png'), path.join(DATA_DIR, 'teacher.jpg'),
     path.join(app.getPath('userData'), 'teacher.png'),
     path.join(exeDir, 'teacher.png'), path.join(exeDir, 'teacher.jpg'),

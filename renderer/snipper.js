@@ -64,3 +64,5 @@ okBtn.addEventListener('click', () => {
   img.src = bg.src;
 });
 cancelBtn.addEventListener('click', () => ipcRenderer.send('shot:cancel'));
+// 按 ESC 取消截屏
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') ipcRenderer.send('shot:cancel'); });

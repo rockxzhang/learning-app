@@ -131,6 +131,7 @@
     $('runBtn').disabled = !filePath;
     $('dlCodeBtn').disabled = true;
     $('dlDocBtn').disabled = true;
+    $('printBtn').disabled = true;
     try { audioEl.pause(); audioEl.src = ''; } catch (e) {}
     index = -1; playlist = []; current = null;
     setProg(0);
@@ -326,6 +327,7 @@
     renderWeak(res.knowledgePoints || []);
     $('dlCodeBtn').disabled = false;
     $('dlDocBtn').disabled = false;
+    $('printBtn').disabled = false;
     if (playlist.length) {
       loadSegment(0, true);
       toast('已生成 ' + res.teaching.length + ' 句讲解，共 ' + playlist.length + ' 段语音');
@@ -377,6 +379,12 @@
     const r = await api.saveFile(sanitizeName(current.title) + '.doc', buildDocHtml(current), 'Word 文档', 'doc');
     if (r && r.ok) toast('已保存讲解：' + r.filePath); else if (r && r.canceled) toast('已取消');
     else if (r && r.error) toast('保存失败：' + r.error);
+  };
+  // 打印讲解：直接复用 A4 文档 HTML，调系统打印
+  $('printBtn').onclick = async () => {
+    if (!current) return;
+    const r = await api.printDoc(buildDocHtml(current));
+    if (r && !r.ok && r.error) toast('打印失败：' + r.error);
   };
 
   // ---- 播放控制 ----

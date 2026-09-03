@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   pickFile: () => ipcRenderer.invoke('file:pick'),
   getAvatarImage: () => ipcRenderer.invoke('avatar:getImage'),
   saveFile: (defaultName, content, filterName, ext) => ipcRenderer.invoke('file:save', defaultName, content, filterName, ext),
+  printDoc: (html) => ipcRenderer.invoke('print:run', html),
   startShot: () => ipcRenderer.invoke('shot:start'),
   runTeach: (cfg, filePath) => ipcRenderer.invoke('teach:run', cfg, filePath),
   memoryProfile: () => ipcRenderer.invoke('memory:profile'),

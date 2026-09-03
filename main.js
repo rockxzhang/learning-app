@@ -54,6 +54,21 @@ ipcMain.handle('file:pick', async () => {
   return r.canceled ? null : r.filePaths[0];
 });
 
+// 打印讲解：隐藏窗口加载 A4 文档 -> 调系统打印
+ipcMain.handle('print:run', (e, html) => {
+  try {
+    const pw = new BrowserWindow({ show: false, width: 800, height: 700, webPreferences: { contextIsolation: true, nodeIntegration: false } });
+    pw.webContents.on('did-finish-load', () => {
+      pw.webContents.print({ silent: false, printBackground: true }, () => {});
+    });
+    pw.on('closed', () => {});
+    pw.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
+});
+
 // 自定义老师头像：用户把 teacher.png/jpg 放到应用数据目录或 exe 旁边即可替换数字人
 ipcMain.handle('avatar:getImage', () => {
   const exeDir = (() => { try { return path.dirname(app.getPath('exe')); } catch (e) { return __dirname; } })();

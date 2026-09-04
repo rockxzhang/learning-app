@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>张老师随身讲 · 开发技术文档</title>
+<style>
+@page { size: A4; margin: 18mm 16mm; }
+body{font-family:"Microsoft YaHei","SimSun",sans-serif;font-size:10.5pt;line-height:1.7;color:#1a1a1a;}
+h1{font-size:20pt;color:#1a3b8f;text-align:center;margin:0 0 4mm;padding-bottom:3mm;border-bottom:2.5px solid #1a3b8f;}
+.sub{text-align:center;color:#666;font-size:10pt;margin-bottom:8mm;}
+h2{font-size:14pt;color:#1a3b8f;margin:16px 0 6px;padding-left:8px;border-left:4px solid #1a3b8f;page-break-after:avoid;}
+h3{font-size:12pt;color:#2c4a8f;margin:12px 0 4px;page-break-after:avoid;}
+p{margin:6px 0;text-align:justify;}
+ul,ol{margin:6px 0 6px 20px;}
+li{margin:3px 0;}
+code{font-family:Consolas,monospace;font-size:9.5pt;background:#f2f4f9;padding:1px 4px;border-radius:3px;color:#1c2b4a;}
+pre{background:#f4f6fb;border:1px solid #dde3f0;border-left:4px solid #1a3b8f;padding:8px 10px;font:9pt/1.5 Consolas,monospace;color:#1c2b4a;white-space:pre-wrap;word-break:break-word;margin:8px 0;}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:9.5pt;}
+th,td{border:1px solid #ccc;padding:5px 8px;text-align:left;vertical-align:top;}
+th{background:#eaf0fb;color:#1a3b8f;}
+.toc{background:#f7f9fd;border:1px solid #dde3f0;padding:10px 16px;margin:0 0 8mm;}
+.toc b{color:#1a3b8f;}
+.toc a{color:#2c4a8f;text-decoration:none;display:block;margin:2px 0;}
+.pg{page-break-before:always;}
+</style>
+</head>
+<body>
+
+<h1>张老师随身讲 · 开发技术文档</h1>
+<div class="sub">「自主学习讲解」Electron 桌面应用 · 技术架构 / 核心实现 / 构建部署 / API 文档<br>文档版本：V1.0.1027（2026-09-04）</div>
+
+<div class="toc">
+<b>目录</b>
+<a href="#s1">1. 项目概述</a>
+<a href="#s2">2. 技术栈</a>
+<a href="#s3">3. 系统架构</a>
+<a href="#s4">4. 目录结构</a>
+<a href="#s5">5. 核心服务详解</a>
+<a href="#s6">6. 讲解管线（数据流）</a>
+<a href="#s7">7. 语音合成（Edge TTS）</a>
+<a href="#s8">8. 版本升级管理</a>
+<a href="#s9">9. 用户系统与管理后台</a>
+<a href="#s10">10. 后端 API 参考</a>
+<a href="#s11">11. 数据存储</a>
+<a href="#s12">12. 配置与密钥</a>
+<a href="#s13">13. 构建与打包</a>
+<a href="#s14">14. 部署（线上）</a>
+<a href="#s15">15. 常用命令</a>
+<a href="#s16">16. 已知问题与说明</a>
+</div>
+
+<h2 id="s1">1. 项目概述</h2>
+<p><b>张老师随身讲</b>（原名「数字人讲题」）是一款面向信息学奥赛（OI）/算法学习的桌面应用。用户上传一道题目（图片 / PDF / Word / Markdown），应用通过 <b>DeepSeek 视觉大模型</b> 自动：
+<ol>
+<li>生成<b>带逐行注释的 C++ 参考代码</b>（左栏，支持字号 A−/A+ 调节）；</li>
+<li>生成<b>详细解题思路</b>（右上栏：题意分析 / 核心算法 / 复杂度 / 样例推演 / 易错点）；</li>
+<li>由<b>数字人老师</b>在黑板前<b>逐句讲解</b>（右下栏，自然 TTS 男声 + 中文字幕 + 黑板板书）；</li>
+</ol>
+并配套：<b>下载代码 / 讲解文档（A4）/ 打印讲解</b>、<b>跨题记忆与个性化</b>、<b>版本升级管理（大/中/小版本）</b>、<b>用户注册登录 / 使用记录 / 管理后台</b>、<b>月度使用 600 次封顶</b>、<b>IP→城市精确地理</b> 等。</p>
+
+<h2 id="s2">2. 技术栈</h2>
+<table>
+<tr><th>层</th><th>技术</th></tr>
+<tr><td>桌面框架</td><td>Electron（主进程 + preload 桥 + 渲染层）</td></tr>
+<tr><td>语言</td><td>JavaScript (Node 20)</td></tr>
+<tr><td>LLM</td><td>DeepSeek <code>deepseek-v4-flash-vision-exp</code>（视觉多模态，可看题图）</td></tr>
+<tr><td>语音合成</td><td>微软 Edge TTS（WebSocket，男声 <code>zh-CN-YunxiNeural</code>）</td></tr>
+<tr><td>IP 地理</td><td>ip2region（离线，精确到市）</td></tr>
+<tr><td>打包</td><td>electron-builder（NSIS 安装版 + 免安装 zip + 使用说明书 PDF）</td></tr>
+<tr><td>后端</td><td>Node http（无框架，JSON 文件存储）+ Caddy 反代</td></tr>
+<tr><td>文档</td><td>reportlab（使用说明书）、Chromium printToPDF（本开发文档）</td></tr>
+</table>
+
+<h2 id="s3">3. 系统架构</h2>
+<pre>
+┌────────────────────────── Electron 应用 ──────────────────────────┐
+│  主进程 main.js                                                    │
+│    ├─ services/config     配置(DeepSeek key/男声/updateUrl/serverUrl)│
+│    ├─ services/parseFile  解析图片/PDF/Word/MD → 文本+图片            │
+│    ├─ services/analyze    DeepSeek 视觉 → 代码/思路/讲稿/知识点        │
+│    ├─ services/tts        Edge TTS(WS会话复用+重试+超时) → 分段落mp3  │
+│    ├─ services/memory     跨题记忆/薄弱点档案                          │
+│    ├─ services/pipeline   讲解管线(编排 analyze→tts→整理)             │
+│    ├─ services/screenshot 区域截图                                   │
+│    ├─ services/update     版本检查/下载进度/类型判断(大/中/小)          │
+│    └─ services/account    注册/登录/使用记录(连后端)                  │
+│  preload.js  contextBridge 暴露安全 IPC                              │
+│  renderer/  index.html+renderer.js  界面;  avatar.js  动态老师        │
+└──────────────────────────────────────────────────────────────────┘
+        │  HTTPS(LLM) / WSS(Edge TTS) / HTTP(后端)
+        ▼
+  ┌── 后端 server/server.js :9588 ──┐       ┌── 更新后台(模拟) ──┐
+  │ /api/register /login /usage     │       │ mock-update-server │
+  │ /api/info /admin/*(登录鉴权)     │       │ /update.json 清单   │
+  │ 数据: users.json usage.json     │       │ 大/中/小场景可切    │
+  │ 地理: ip2region(IP→城市精确到市) │       └────────────────────┘
+  └────────────────────────────────┘
+</pre>
+<p>客户端（Electron）集成 <b>DeepSeek 视觉</b> 与 <b>Edge TTS</b>；注册/登录/使用记录/管理后台由独立后端 <code>server/server.js</code> 承担（线上部署于 <code>47.115.202.192:9588</code>，与 OJ/官网彼此独立）。</p>
+
+<h2 id="s4">4. 目录结构</h2>
+<pre>
+learning-app/
+├─ main.js            主进程(窗口/IPC/Update/账号/崩溃兜底)
+├─ preload.js         contextBridge 安全桥
+├─ renderer/
+│  ├─ index.html      界面(头部/进度条/左代码/右讲解/弹窗)
+│  ├─ renderer.js     交互逻辑(讲解/播放/下载/打印/更新/账号)
+│  ├─ avatar.js       数字人老师(讲台+静态形象,无动画循环)
+│  └─ snipper.html/js 区域截图覆盖层(支持 ESC 取消)
+├─ services/          主进程服务
+│  ├─ config.js   parseFile.js  analyze.js  tts.js
+│  ├─ memory.js  pipeline.js   screenshot.js  update.js  account.js
+│  └─ index.js   api.key(密钥,gitignore/仅读文件)
+├─ build/             appver.json(版本)  teacher.png(头像)
+├─ server/            后端(线上)
+│  ├─ server.js       注册/登录/使用/管理 + 鉴权 + ip2region
+│  ├─ public/admin.html  admin-login.html (管理后台/登录页)
+│  ├─ data/forbidden.txt  违规用户名名单(可维护)
+│  ├─ package.json deploy.sh
+├─ scripts/
+│  ├─ build-release.js   打包(读changelog.txt→写update-manifest.json)
+│  ├─ make_manual.py     生成使用说明书PDF(reportlab)
+│  ├─ mock-update-server.js  本地模拟更新后台
+│  ├─ local-update-test.js   本地三场景更新测试
+│  ├─ git-release.js git-push.js
+├─ release/           产物(版本目录/zip/说明书/update-manifest.json)
+└─ package.json
+</pre>
+
+<h2 id="s5">5. 核心服务详解</h2>
+
+<h3>5.1 config.js</h3>
+<p>持久化配置 <code>DEFAULTs</code>：`llmEndpoint / llmApiKey / llmModel`（DeepSeek 视觉）；`teacherVoice = 'zh-CN-YunxiNeural'`（阳光男声，<code>load()</code> 强制，不被用户覆盖）；`baseVersion`；`updateUrl`；`serverUrl`。</p>
+<p><b>密钥</b>：DeepSeek key 只从环境变量或 <code>services/api.key</code>（gitignore）读取，不入源码；打包时随安装包分发。</p>
+
+<h3>5.2 parseFile.js</h3>
+<p>按文件类型提取题目：图片类转 Base64 + OCR 文本；PDF/Word 解析文本（含图片）；Markdown/文本直读。输出统一结构供 analyze 使用。</p>
+
+<h3>5.3 analyze.js</h3>
+<p>调用 DeepSeek 视觉模型（多轮 prompt，含题目图片/文本），返回 JSON：
+<pre>
+{ title, solution, code(带注释C++), teaching[](逐句讲稿数组), knowledgePoints[] }
+</pre>
+通过 <code>response_format=json</code> 保证结构化输出。</p>
+
+<h3>5.4 memory.js</h3>
+<p>跨题记忆：按用户/知识点维度记录已讲解题目与薄弱点，New 讲解时注入上下文实现个性化；<code>profile()</code> / <code>addWeak()</code>。数据存 <code>DATA_DIR</code> 下 JSON。</p>
+
+<h3>5.5 screenshot.js</h3>
+<p>桌面截图：<code>desktopCapturer</code> 抓屏 → 保存至临时目录 → 打开覆盖层框选 → <code>shot:crop</code> 裁剪返回；支持 ESC / 红 ✕ 取消。截取结果作为题目图片送入管线。</p>
+
+<h3>5.6 update.js</h3>
+<p>版本升级管理核心：<code>parse()</code>/<code>type()</code> 比较 <code>major(大)·minor(中)·patch(小)</code>；<code>check(url,cur)</code> 拉取 manifest 判断；<code>download(url,dest,onProgress)</code> 流式下载带进度。</p>
+<table>
+<tr><th>类型</th><th>判定</th><th>行为</th></tr>
+<tr><td>大版本</td><td>主版本不同</td><td>整包重装：下载→安装目录建 <code>update/</code>→拉起安装→关软件</td></tr>
+<tr><td>中版本</td><td>次版本不同</td><td>差分安装：下载→拉起安装→关软件</td></tr>
+<tr><td>小版本</td><td>修订号不同</td><td>热更：仅进度条→完成刷新（无真实下载）</td></tr>
+</table>
+
+<h3>5.7 account.js</h3>
+<p>注册/登录/使用记录，连接后端：<code>register/login/record/info</code>；会话存 <code>DATA_DIR/session.json</code>，登录态持久化；<code>record()</code> 由讲解成功后自动调用（主进程 fire-and-forget），上报 IP/城市/时间/累计次数。</p>
+
+<h2 id="s6">6. 讲解管线（数据流）</h2>
+<pre>
+点「开始讲解」(需已登录 + 未达月度上限)
+  → parseFile 提取题目
+  → analyze 调 DeepSeek 视觉 → code/solution/teaching/knowledgePoints
+  → tts.synthesize ×N 段 → 逐段 mp3 (目录 tts/)
+      (校验通过后自动调用 account.record 上报一条使用)
+  → renderer: renderCode(带行号) / renderSolution / renderTranscript
+  → 播放：loadSegment → <audio> 播放 → 高亮当前行 → 黑板字幕
+  → 下载代码(.cpp 无行号) / 下载文档(.doc A4) / 打印讲解
+</pre>
+
+<h2 id="s7">7. 语音合成（Edge TTS）</h2>
+<p>纯 Node 实现微软 Edge TTS：WebSocket 到 <code>wss://speech.platform.bing.com/.../edge/v1</code>，带 <code>Sec-MS-GEC</code> 签名头 + MUID cookie，每段发 SSML，收 <code>audio</code> 二进制。<code>openSession(voice,ratePct)</code> <b>复用一条连接逐段合成</b>，规避连续建连被限流；<code>send()</code> 增<b>超时</b>；<code>synthesize()</code> 逐段重试 + <b>会话断线重开续传</b>（reopenLimit），<b>不丢段</b>；管线再整段<b>整体重试×3</b>，杜绝「组到一半中断」。</p>
+
+<h2 id="s8">8. 版本升级管理</h2>
+<p>界面：版本号旁<b>红点</b>（有更新）→ 点击弹「软件更新」（当前/最新版本、更新类型、更新内容、开始更新、进度条）。<b>打包时</b>读 <code>release/changelog.txt</code>（UTF-8）→ 写 <code>release/update-manifest.json</code>（latest/changelog/downloadUrl/sizeMb），供后台使用。<b>模拟后台</b> <code>mock-update-server.js</code> 读 manifest 或环境变量（LATEST_VERSION/CHANGELOG/FILE）切换大/中/小场景。本地验证：<code>npm run updatetest</code>。</p>
+
+<h2 id="s9">9. 用户系统与管理后台</h2>
+<p><b>客户端</b>：头部「注册/登录」→ 弹窗；注册填<b>用户名（工信部违规名单校验→提示「违规」；重复→「用户名重复」）/ 手机号（尾数校验，无短信）/ 密码/确认密码</b>；登录（用户名或手机号+密码）；登录态持久化；「我的信息」看<b>累计次数/本月使用x/上限</b>；<b>未登录用任何功能（讲解/截图/下载/打印）先提示登录</b>。</p>
+<p><b>后端</b>：<code>server/server.js</code>，<code>POST /api/register|login|usage|info</code>，<code>GET /api/admin/*</code>。<b>管理后台登录</b>（<code>zhangxin/jackyso5</code> 固定），<code>/admin</code> 与 <code>/api/admin/*</code> 未登录拦截；登录成功写 <code>admin_token</code> cookie，<code>location.reload()</code> 原地刷新（不跳回 OJ）。<b>月度封顶</b>：<code>MONTH_LIMIT</code>（默认 600）。</p>
+
+<h2 id="s10">10. 后端 API 参考</h2>
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th></tr>
+<tr><td>POST</td><td><code>/api/register</code></td><td>{username,phone,password} → 违规/重复/格式校验</td></tr>
+<tr><td>POST</td><td><code>/api/login</code></td><td>{identifier,password} → 用户名或手机号登录（密码sha256）</td></tr>
+<tr><td>POST</td><td><code>/api/usage</code></td><td>{username,phone} → 记录 IP/城市/时间/累计/+月计，<b>月度封顶</b></td></tr>
+<tr><td>POST</td><td><code>/api/info</code></td><td>{username,phone} → count/monthCount/month/limit</td></tr>
+<tr><td>POST</td><td><code>/api/admin/login</code></td><td>{username,password} → 固定账号 → token</td></tr>
+<tr><td>GET</td><td><code>/api/admin/stats</code></td><td>userCount / usageCount（需鉴权）</td></tr>
+<tr><td>GET</td><td><code>/api/admin/users</code></td><td>用户列表（含本月次数）（需鉴权）</td></tr>
+<tr><td>GET</td><td><code>/api/admin/usage</code></td><td>使用记录列表（需鉴权）</td></tr>
+<tr><td>GET</td><td><code>/admin</code></td><td>管理页（未登录→登录页）</td></tr>
+</table>
+
+<h2 id="s11">11. 数据存储</h2>
+<table>
+<tr><th>文件</th><th>位置</th><th>内容</th></tr>
+<tr><td><code>users.json</code></td><td>server/data/（gitignore，运行时生成）</td><td>用户：username/phone/pass(sha256)/count/month/monthCount/createdAt</td></tr>
+<tr><td><code>usage.json</code></td><td>server/data/</td><td>每次使用：username/phone/ip/city/time/count/monthCount</td></tr>
+<tr><td><code>forbidden.txt</code></td><td>server/data/</td><td>违规用户名名单（换行，后台维护）</td></tr>
+<tr><td><code>session.json</code></td><td>应用 DATA_DIR</td><td>登录态（username/phone）</td></tr>
+<tr><td><code>appver.json</code></td><td>build/（打包写入，gitignore）</td><td>界面显示版本号</td></tr>
+<tr><td><code>update-manifest.json</code></td><td>release/</td><td>更新清单（打包时生成）</td></tr>
+</table>
+
+<h2 id="s12">12. 配置与密钥</h2>
+<pre>
+config.js DEFAULTS:
+  llmEndpoint : https://api.deepseek.com/v1/chat/completions
+  llmModel    : deepseek-v4-flash-vision-exp
+  teacherVoice: zh-CN-YunxiNeural      (男声，固定)
+  baseVersion : 1000
+  updateUrl   : http://127.0.0.1:9577/update.json   (本地模拟)
+  serverUrl   : http://47.115.202.192:9588          (线上后端)
+密钥: services/api.key  (DeepSeek, 仅文件/环境变量读取, gitignore)
+</pre>
+<p>生产 URL：`updateUrl` 指向真实更新后台；`serverUrl` 指向线上后端。可用 <code>scripts/mock-update-server.js</code> 与 <code>server/server.js</code> 在本地分别模拟。</p>
+
+<h2 id="s13">13. 构建与打包</h2>
+<pre>
+① 写更新内容到 release/changelog.txt (UTF-8)
+② npm run release
+   - scripts/build-release.js 读 version.json(+1) → V1.0.N
+   - 写 build/appver.json (界面版本)
+   - electron-builder --win nsis → release/V1.0.N/张老师随身讲-V1.0.N.exe
+   - 写 release/update-manifest.json (latest+changelog+sizeMb)
+   - python make_manual.py → 使用说明书.pdf
+   - powershell Compress-Archive win-unpacked/* → 免安装.zip(无win-unpacked层)
+</pre>
+<p>打包须用捆绑 Node `/opt/ds h/node` 前置到 PATH；npm 用 npmmirror 镜像。</p>
+
+<h2 id="s14">14. 部署（线上）</h2>
+<p>后端独立部署于 <b>47.115.202.192:9588</b>（与 OJ/官网 <b>互不影响</b>）：</p>
+<pre>
+① 用 Linux Node(v20.18.0) 解包到 /opt/node
+② server 目录(server.js/public/data/ip2region) 放 /opt/zhangjiang-server
+③ 系统服务 systemd zhangjiang-server (PORT=9588, Restart=always) 启动
+④ ip2region 落 node_modules/ip2region (离线, 精确到市)
+⑤ 安全组放行 9588; 登录页 location.reload() 原地刷新(不跳OJ)
+管理后台: http://47.115.202.192:9588/admin  (zhangxin/jackyso5)
+</pre>
+<p>说明：早期经 Caddy <code>/zhangjiang/*</code>（80端口）反代会与 OJ 产生耦合（登录被带回 OJ），已改为<b>仅用 9588 直连</b>，完全解耦。</p>
+
+<h2 id="s15">15. 常用命令</h2>
+<pre>
+# 开发
+npm start                                  # 启动应用(本地)
+npm run server                             # 启动后端(9588)
+npm run updatetest                         # 本地三场景更新测试
+npm run release                            # 打包 V1.0.N
+# 模拟更新后台(切场景)
+LATEST_VERSION=1.0.1023 CHANGELOG=您好... node scripts/mock-update-server.js
+LATEST_VERSION=1.1.1022 CHANGELOG=您好，这是中版本 FILE=...exe node scripts/mock-update-server.js
+LATEST_VERSION=2.0.1022 CHANGELOG=您好这是大版本   FILE=...exe node scripts/mock-update-server.js
+</pre>
+
+<h2 id="s16">16. 已知问题与说明</h2>
+<ul>
+<li><b>Edge TTS 稳定性</b>：间歇性掉线/空音频已用「会话复用+重试+超时+断线续传+整体重试」加固，偶发的限流仍可能触发，失败时界面给出明确提示。</li>
+<li><b>IP→城市</b>：使用 ip2region 离线库精确到市；回环/内网返回「本地（回环）」。</li>
+<li><b>中文参数编码</b>：PowerShell→npm 传中文参数会乱码，更新内容用 <code>release/changelog.txt</code> 文件传递。</li>
+<li><b>密钥</b>：DeepSeek key 仅存 <code>services/api.key</code>（gitignore），打包时随应用分发；泄露需及时轮换。</li>
+<li><b>管理后台鉴权</b>：固定账号 <code>zhangxin/jackyso5</code>，token 存内存（重启失效），生产建议改造为持久化会话。</li>
+<li><b>月度封顶</b>：按 <code>MONTH_LIMIT</code>（默认600），达到后接口返回提示并拦截。</li>
+</ul>
+
+</body>
+</html>

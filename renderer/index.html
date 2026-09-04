@@ -275,6 +275,20 @@ button{cursor:pointer}
   </div>
 </div>
 
+<div class="umask" id="infoMask" hidden>
+  <div class="udialog">
+    <div class="uhead">我的信息 <span class="x" id="infoX">✕</span></div>
+    <div class="ubody">
+      <div class="urow"><span>用户名</span><b id="infoUser">--</b></div>
+      <div class="urow"><span>手机号</span><b id="infoPhone">--</b></div>
+      <div class="urow"><span>本月使用</span><b id="infoMonth">--</b></div>
+      <div class="urow"><span>累计次数</span><b id="infoCount">--</b></div>
+      <div class="ferr" id="infoErr"></div>
+    </div>
+    <div class="ufoot"><button class="btn ghost" id="infoClose">关闭</button></div>
+  </div>
+</div>
+
 <script src="avatar.js"></script>
 <script src="renderer.js"></script>
 </body>

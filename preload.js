@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('api', {
   userLogin: (identifier, password) => ipcRenderer.invoke('user:login', identifier, password),
   userSession: () => ipcRenderer.invoke('user:session'),
   userLogout: () => ipcRenderer.invoke('user:logout'),
+  userInfo: () => ipcRenderer.invoke('user:info'),
   updateCheck: () => ipcRenderer.invoke('update:check'),
   updateDownload: (url) => ipcRenderer.invoke('update:download', url),
   updateApply: (type, filePath) => ipcRenderer.invoke('update:apply', type, filePath),

@@ -10,6 +10,7 @@ const USERF = path.join(DATA, 'users.json');
 const USAGEF = path.join(DATA, 'usage.json');
 const FORBIDDEN = path.join(DATA, 'forbidden.txt');
 const PORT = Number(process.env.PORT || 9588);
+const MONTH_LIMIT = Number(process.env.MONTH_LIMIT || 600);   // 每月使用次数封顶
 fs.mkdirSync(DATA, { recursive: true });
 if (!fs.existsSync(USERF)) fs.writeFileSync(USERF, '[]', 'utf8');
 if (!fs.existsSync(USAGEF)) fs.writeFileSync(USAGEF, '[]', 'utf8');
@@ -58,7 +59,7 @@ const routes = {
     if (users.some(u => u.username === username)) return { ok: false, error: '用户名重复' };
     if (!/^\d{6,11}$/.test(phone)) return { ok: false, error: '手机号格式不正确' };
     if ((password || '').length < 6) return { ok: false, error: '密码至少6位' };
-    users.push({ username, phone, pass: hash(password), count: 0, createdAt: now() });
+    users.push({ username, phone, pass: hash(password), count: 0, month: '', monthCount: 0, createdAt: now() });
     writeJSON(USERF, users);
     return { ok: true, username };
   },
@@ -76,17 +77,31 @@ const routes = {
     const users = readJSON(USERF);
     const u = users.find(x => x.username === username && x.phone === phone);
     if (!u) return { ok: false, error: '未找到用户' };
+    // 月度使用次数封顶
+    const d = now(), mkey = d.slice(0, 7);
+    if (u.month !== mkey) { u.month = mkey; u.monthCount = 0; }
+    if ((u.monthCount || 0) >= MONTH_LIMIT) return { ok: false, error: '本月使用次数已达上限（' + MONTH_LIMIT + ' 次）' };
+    u.monthCount = (u.monthCount || 0) + 1;
     u.count = (u.count || 0) + 1;
     writeJSON(USERF, users);
     const usage = readJSON(USAGEF);
-    usage.push({ username, phone, ip: clientIp(req), city: geo(clientIp(req)), time: now(), count: u.count });
+    usage.push({ username, phone, ip: clientIp(req), city: geo(clientIp(req)), time: d, count: u.count, monthCount: u.monthCount });
     writeJSON(USAGEF, usage);
-    return { ok: true, count: u.count };
+    return { ok: true, count: u.count, monthCount: u.monthCount, month: u.month };
+  },
+  'POST /api/info': async (req, body) => {
+    const username = String(body.username || '').trim();
+    const phone = String(body.phone || '').trim();
+    const u = readJSON(USERF).find(x => x.username === username && x.phone === phone);
+    if (!u) return { ok: false, error: '未找到用户' };
+    const mkey = now().slice(0, 7);
+    const monthCount = u.month === mkey ? (u.monthCount || 0) : 0;
+    return { ok: true, username: u.username, phone: u.phone, count: u.count || 0, monthCount, month: mkey, limit: MONTH_LIMIT };
   },
   'GET /api/admin/stats': async () => {
     return { ok: true, userCount: readJSON(USERF).length, usageCount: readJSON(USAGEF).length };
   },
-  'GET /api/admin/users': async () => readJSON(USERF).map(u => ({ username: u.username, phone: u.phone, count: u.count, createdAt: u.createdAt })),
+  'GET /api/admin/users': async () => readJSON(USERF).map(u => ({ username: u.username, phone: u.phone, count: u.count, monthCount: u.monthCount || 0, month: u.month || '', createdAt: u.createdAt })),
   'GET /api/admin/usage': async () => readJSON(USAGEF),
 };
 

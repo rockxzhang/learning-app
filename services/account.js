@@ -28,4 +28,11 @@ async function record(dir, cfg) {
   try { return await post(cfg, '/api/usage', { username: s.username, phone: s.phone }); }
   catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
 }
-module.exports = { register, login, record, saveSession, loadSession, clearSession };
+// 我的信息（累计次数 / 本月次数 / 上限）
+async function info(dir, cfg) {
+  const s = loadSession(dir);
+  if (!s || !s.username) return { ok: false, error: '未登录' };
+  try { return await post(cfg, '/api/info', { username: s.username, phone: s.phone }); }
+  catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+}
+module.exports = { register, login, record, info, saveSession, loadSession, clearSession };

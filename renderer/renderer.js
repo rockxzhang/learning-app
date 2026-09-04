@@ -269,6 +269,7 @@
 
   // 截图：最小化 -> 区域截图 -> 绿√确认/红×取消 -> 存临时png -> 回自动上传分析
   $('shotBtn').onclick = async () => {
+    if (!ensureLogin('请先登录后再截图')) return;
     resetUI();
     const r = await api.startShot();
     if (!r || !r.ok || !r.filePath) { if (r && r.canceled) toast('已取消截图'); return; }
@@ -298,7 +299,15 @@
     }
   }
 
-  $('runBtn').onclick = () => { if (filePath) { resetUI(); analyze(); } };
+  $('runBtn').onclick = async () => {
+    if (!filePath) return;
+    if (!ensureLogin('请先登录后再开始讲解')) return;
+    try {
+      const info = await api.userInfo();
+      if (info && info.ok && info.monthCount >= info.limit) { toast('本月使用次数已达上限（' + info.limit + ' 次）'); $('runBtn').textContent = '本月已达上限'; return; }
+    } catch (e) {}
+    resetUI(); analyze();
+  };
 
   async function applyResult(res) {
     current = res;
@@ -353,12 +362,14 @@
   }
   $('dlCodeBtn').onclick = async () => {
     if (!current) return;
+    if (!ensureLogin('请先登录后再下载')) return;
     const r = await api.saveFile(sanitizeName(current.title) + '.cpp', stripFence(current.code || ''), 'C++ 源文件', 'cpp');
     if (r && r.ok) toast('已保存代码：' + r.filePath); else if (r && r.canceled) toast('已取消');
     else if (r && r.error) toast('保存失败：' + r.error);
   };
   $('dlDocBtn').onclick = async () => {
     if (!current) return;
+    if (!ensureLogin('请先登录后再下载')) return;
     const r = await api.saveFile(sanitizeName(current.title) + '.doc', buildDocHtml(current), 'Word 文档', 'doc');
     if (r && r.ok) toast('已保存讲解：' + r.filePath); else if (r && r.canceled) toast('已取消');
     else if (r && r.error) toast('保存失败：' + r.error);
@@ -366,6 +377,7 @@
   // 打印讲解：直接复用 A4 文档 HTML，调系统打印
   $('printBtn').onclick = async () => {
     if (!current) return;
+    if (!ensureLogin('请先登录后再打印')) return;
     const r = await api.printDoc(buildDocHtml(current));
     if (r && !r.ok && r.error) toast('打印失败：' + r.error);
   };
@@ -408,16 +420,39 @@
   boot();
 
   // ---- 用户账号（注册/登录/会话） ----
+  let me = null;   // 当前登录用户 {username}
   function renderUserArea(u) {
+    me = (u && u.username) ? { username: u.username } : null;
     const area = $('userArea');
-    if (u && u.username) {
-      area.innerHTML = '<span class="uname">' + escH2(u.username) + '</span><button class="btn ghost small" id="logoutBtn">退出</button>';
+    if (me) {
+      area.innerHTML = '<button class="btn ghost small" id="meBtn">我的信息</button><span class="uname">' + escH2(me.username) + '</span><button class="btn ghost small" id="logoutBtn">退出</button>';
+      $('meBtn').onclick = openInfo;
       $('logoutBtn').onclick = async () => { await api.userLogout(); renderUserArea(null); toast('已退出登录'); };
     } else {
       area.innerHTML = '<button class="btn ghost small" id="regBtn">注册</button><button class="btn ghost small" id="loginBtn">登录</button>';
       $('regBtn').onclick = () => { $('regErr').textContent = ''; $('regMask').hidden = false; };
       $('loginBtn').onclick = () => { $('loginErr').textContent = ''; $('loginMask').hidden = false; };
     }
+  }
+  async function openInfo() {
+    const e = $('infoErr'); e.textContent = '';
+    try {
+      const r = await api.userInfo();
+      if (r && r.ok) {
+        $('infoUser').textContent = r.username; $('infoPhone').textContent = r.phone;
+        $('infoMonth').textContent = r.monthCount + ' / ' + r.limit + '（' + r.month + '）';
+        $('infoCount').textContent = r.count;
+        $('infoMask').hidden = false;
+      } else { e.textContent = (r && r.error) || '获取信息失败'; }
+    } catch (err) { e.textContent = '获取信息失败：' + err.message; }
+  }
+  $('infoClose').onclick = () => { $('infoMask').hidden = true; };
+  $('infoX').onclick = () => { $('infoMask').hidden = true; };
+  function ensureLogin(msg) {
+    if (me) return true;
+    toast(msg || '请先登录后再使用');
+    $('loginMask').hidden = false;
+    return false;
   }
   function initAccount() {
     api.userSession().then((s) => { renderUserArea(s); }).catch(() => renderUserArea(null));

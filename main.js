@@ -136,7 +136,11 @@ ipcMain.handle('teach:run', async (e, cfg, filePath) => {
       (m) => win.webContents.send('teach:log', m),
       (p) => win.webContents.send('teach:progress', p));
     // 解题成功：自动上报一条使用记录（后台记 IP/城市/时间/累计次数）
-    if (res && res.ok) { try { services.account.record(DATA_DIR, cfg).catch(() => {}); } catch (e) {} }
+    if (res && res.ok) {
+      try {
+        services.account.record(DATA_DIR, cfg).then((r) => { if (r && !r.ok && r.error) { try { win.webContents.send('teach:log', '⚠️ ' + r.error); } catch (e) {} } }).catch(() => {});
+      } catch (e) {}
+    }
     return res;
   } catch (err) {
     return { ok: false, error: String((err && err.message) || err) };
@@ -148,6 +152,7 @@ ipcMain.handle('user:register', (e, username, phone, password) => services.accou
 ipcMain.handle('user:login', (e, identifier, password) => services.account.login(DATA_DIR, services.config.load(DATA_DIR), identifier, password));
 ipcMain.handle('user:session', () => services.account.loadSession(DATA_DIR));
 ipcMain.handle('user:logout', () => services.account.clearSession(DATA_DIR));
+ipcMain.handle('user:info', () => services.account.info(DATA_DIR, services.config.load(DATA_DIR)));
 
 // 学习档案
 ipcMain.handle('memory:profile', () => services.memory.profile(DATA_DIR));

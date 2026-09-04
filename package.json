@@ -11,7 +11,8 @@
     "release": "node scripts/build-release.js",
     "portable": "node scripts/build-portable.js",
     "gitrelease": "node scripts/git-release.js",
-    "updatetest": "node scripts/local-update-test.js"
+    "updatetest": "node scripts/local-update-test.js",
+    "server": "node server/server.js"
   },
   "dependencies": {
     "mammoth": "^1.8.0",

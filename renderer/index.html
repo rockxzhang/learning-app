@@ -150,6 +150,7 @@ button{cursor:pointer}
 @keyframes udot{0%,100%{opacity:.5}50%{opacity:1}}
 .version{cursor:default}
 .umask{position:fixed;inset:0;background:rgba(4,8,18,.62);z-index:100;display:flex;align-items:center;justify-content:center}
+.umask[hidden]{display:none}
 .udialog{width:380px;max-width:92vw;background:linear-gradient(180deg,#141d32,#0d1424);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.5);overflow:hidden}
 .uhead{padding:14px 18px;font-size:16px;font-weight:600;letter-spacing:.4px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
 .uhead .x{cursor:pointer;color:var(--mut);font-size:18px}
@@ -163,6 +164,13 @@ button{cursor:pointer}
 .ufill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .2s;border-radius:8px}
 .upct{position:absolute;right:6px;top:-1px;font-size:11px;color:var(--fg)}
 .ufoot{display:flex;justify-content:flex-end;gap:10px;padding:12px 18px;border-top:1px solid var(--line)}
+.btn.small{padding:5px 10px;font-size:12px}
+.user-area{display:inline-flex;gap:6px;align-items:center}
+.user-area .uname{color:#7dd3fc;font-size:12px;margin-right:2px}
+.flabel{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+.finput{width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--fg);font-size:14px}
+.finput:focus{outline:none;border-color:var(--acc)}
+.ferr{color:#ff6b6b;font-size:12px;margin-top:10px;min-height:16px;white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -175,6 +183,7 @@ button{cursor:pointer}
     <span class="spacer"></span>
     <span class="version">软件版本：<b id="curVer">--</b> <span id="updateDot" class="udot" title="有新版本，点击查看" hidden>●</span></span>
     <button class="btn" id="runBtn" disabled>开始讲解</button>
+    <span class="user-area" id="userArea"><button class="btn ghost small" id="regBtn">注册</button><button class="btn ghost small" id="loginBtn">登录</button></span>
   </div>
 
   <div class="prog" id="prog">
@@ -237,6 +246,32 @@ button{cursor:pointer}
       <button class="btn ghost" id="uCloseBtn">关闭</button>
       <button class="btn" id="uGoBtn">开始更新</button>
     </div>
+  </div>
+</div>
+
+<div class="umask" id="regMask" hidden>
+  <div class="udialog">
+    <div class="uhead">用户注册 <span class="x" id="regX">✕</span></div>
+    <div class="ubody">
+      <label class="flabel">用户名</label><input id="regUser" class="finput" maxlength="20" placeholder="登录用户名（不可用违规名字）">
+      <label class="flabel">手机号</label><input id="regPhone" class="finput" maxlength="11" placeholder="11 位手机号">
+      <label class="flabel">登录密码</label><input id="regPass" class="finput" type="password" placeholder="至少 6 位">
+      <label class="flabel">确认登录密码</label><input id="regPass2" class="finput" type="password" placeholder="再输入一次密码">
+      <div class="ferr" id="regErr"></div>
+    </div>
+    <div class="ufoot"><button class="btn ghost" id="regCancel">取消</button><button class="btn" id="regGo">注册</button></div>
+  </div>
+</div>
+
+<div class="umask" id="loginMask" hidden>
+  <div class="udialog">
+    <div class="uhead">用户登录 <span class="x" id="loginX">✕</span></div>
+    <div class="ubody">
+      <label class="flabel">用户名 / 手机号</label><input id="loginId" class="finput" placeholder="用户名或手机号">
+      <label class="flabel">登录密码</label><input id="loginPass" class="finput" type="password" placeholder="密码">
+      <div class="ferr" id="loginErr"></div>
+    </div>
+    <div class="ufoot"><button class="btn ghost" id="loginCancel">取消</button><button class="btn" id="loginGo">登录</button></div>
   </div>
 </div>
 

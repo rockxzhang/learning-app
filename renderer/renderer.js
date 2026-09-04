@@ -407,6 +407,50 @@
 
   boot();
 
+  // ---- 用户账号（注册/登录/会话） ----
+  function renderUserArea(u) {
+    const area = $('userArea');
+    if (u && u.username) {
+      area.innerHTML = '<span class="uname">' + escH2(u.username) + '</span><button class="btn ghost small" id="logoutBtn">退出</button>';
+      $('logoutBtn').onclick = async () => { await api.userLogout(); renderUserArea(null); toast('已退出登录'); };
+    } else {
+      area.innerHTML = '<button class="btn ghost small" id="regBtn">注册</button><button class="btn ghost small" id="loginBtn">登录</button>';
+      $('regBtn').onclick = () => { $('regErr').textContent = ''; $('regMask').hidden = false; };
+      $('loginBtn').onclick = () => { $('loginErr').textContent = ''; $('loginMask').hidden = false; };
+    }
+  }
+  function initAccount() {
+    api.userSession().then((s) => { renderUserArea(s); }).catch(() => renderUserArea(null));
+  }
+  $('regX').onclick = () => { $('regMask').hidden = true; };
+  $('regCancel').onclick = () => { $('regMask').hidden = true; };
+  $('loginX').onclick = () => { $('loginMask').hidden = true; };
+  $('loginCancel').onclick = () => { $('loginMask').hidden = true; };
+  $('regGo').onclick = async () => {
+    const username = $('regUser').value.trim(), phone = $('regPhone').value.trim(), p1 = $('regPass').value, p2 = $('regPass2').value, e = $('regErr');
+    e.textContent = '';
+    if (!username) { e.textContent = '请填写用户名'; return; }
+    if (!/^\d{6,11}$/.test(phone)) { e.textContent = '手机号格式不正确'; return; }
+    if (p1.length < 6) { e.textContent = '登录密码至少 6 位'; return; }
+    if (p1 !== p2) { e.textContent = '两次输入的密码不一致'; return; }
+    try {
+      const r = await api.userRegister(username, phone, p1);
+      if (r && r.ok) { $('regMask').hidden = true; $('regUser').value = $('regPhone').value = $('regPass').value = $('regPass2').value = ''; renderUserArea({ username }); toast('注册成功，已登录'); }
+      else { e.textContent = (r && r.error) || '注册失败'; }
+    } catch (err) { e.textContent = '注册失败：' + err.message; }
+  };
+  $('loginGo').onclick = async () => {
+    const id = $('loginId').value.trim(), p = $('loginPass').value, e = $('loginErr');
+    e.textContent = '';
+    if (!id || !p) { e.textContent = '请填写账号和密码'; return; }
+    try {
+      const r = await api.userLogin(id, p);
+      if (r && r.ok) { $('loginMask').hidden = true; $('loginId').value = $('loginPass').value = ''; renderUserArea({ username: r.username }); toast('登录成功：' + r.username); }
+      else { e.textContent = (r && r.error) || '登录失败'; }
+    } catch (err) { e.textContent = '登录失败：' + err.message; }
+  };
+  initAccount();
+
   // ---- 版本升级管理 ----
   let upd = null;
   function showProg2(pct) { const p = $('uProg'); p.classList.add('show'); $('uFill').style.width = (pct || 0) + '%'; $('uPct').textContent = Math.round(pct || 0) + '%'; }

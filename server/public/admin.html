@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>管理后台 · 张老师随身讲</title>
+<style>
+body{margin:0;background:#0f1420;color:#e8eef8;font:14px "Microsoft YaHei",sans-serif;padding:24px}
+h1{font-size:20px;margin:0 0 16px}
+h2{font-size:15px;margin:22px 0 8px;color:#7dd3fc}
+.cards{display:flex;gap:16px}
+.card{background:#171f30;border:1px solid #26314a;border-radius:12px;padding:16px 22px;min-width:150px}
+.card b{font-size:28px;color:#38bdf8;display:block}
+.card span{color:#9aa8c2;font-size:12px}
+table{width:100%;border-collapse:collapse;background:#141b2b;border-radius:10px;overflow:hidden}
+th,td{border-bottom:1px solid #26314a;padding:8px 12px;text-align:left;font-size:13px}
+th{background:#1a2233;color:#9aa8c2;font-weight:600}
+tr:hover td{background:rgba(56,189,248,.06)}
+.muted{color:#7a89a8}
+</style>
+</head>
+<body>
+<h1>管理后台 · 张老师随身讲</h1>
+<div class="cards">
+  <div class="card"><b id="uCount">0</b><span>注册用户数</span></div>
+  <div class="card"><b id="gCount">0</b><span>使用记录数</span></div>
+</div>
+
+<h2>用户列表（用户名 / 手机号 / 累计次数 / 注册时间）</h2>
+<table><thead><tr><th>用户名</th><th>手机号</th><th>累计次数</th><th>注册时间</th></tr></thead><tbody id="users"></tbody></table>
+
+<h2>使用记录（动态更新：IP / 城市 / 用户名 / 手机号 / 使用时间 / 累计次数）</h2>
+<table><thead><tr><th>IP</th><th>城市</th><th>用户名</th><th>手机号</th><th>使用时间</th><th>累计次数</th></tr></thead><tbody id="usage"></tbody></table>
+
+<script>
+async function j(u){ const r=await fetch(u); return r.json(); }
+function esc(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function load(){
+  const s=await j('/api/admin/stats');
+  document.getElementById('uCount').textContent=s.userCount||0;
+  document.getElementById('gCount').textContent=s.usageCount||0;
+  const users=await j('/api/admin/users');
+  document.getElementById('users').innerHTML=users.map(u=>'<tr><td>'+esc(u.username)+'</td><td>'+esc(u.phone)+'</td><td>'+u.count+'</td><td class="muted">'+esc(u.createdAt||'')+'</td></tr>').join('')||'<tr><td colspan="4" class="muted">暂无用户</td></tr>';
+  const usage=await j('/api/admin/usage');
+  document.getElementById('usage').innerHTML=usage.slice().reverse().map(u=>'<tr><td>'+esc(u.ip)+'</td><td>'+esc(u.city)+'</td><td>'+esc(u.username)+'</td><td>'+esc(u.phone)+'</td><td class="muted">'+esc(u.time)+'</td><td>'+u.count+'</td></tr>').join('')||'<tr><td colspan="6" class="muted">暂无记录</td></tr>';
+}
+load(); setInterval(load, 3000);
+</script>
+</body>
+</html>

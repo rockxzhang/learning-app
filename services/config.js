@@ -17,6 +17,7 @@ const DEFAULTS = {
   autoSpeak: true,                            // 生成后自动开始讲解
   baseVersion: 1000,                          // 软件版本号起始（显示 V1.0.1000），每次讲解/打包 +1
   updateUrl: 'http://127.0.0.1:9577/update.json',  // 更新后台（本地模拟；正式可改真实地址）
+  serverUrl: 'http://127.0.0.1:9588',             // 用户/使用记录/管理后台 后端地址（本地测试）
 };
 
 function file(dir) { return path.join(dir, 'config.json'); }

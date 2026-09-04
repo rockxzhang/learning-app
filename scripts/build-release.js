@@ -12,6 +12,16 @@ const outDir = path.join(ROOT, 'release', v);
 fs.mkdirSync(outDir, { recursive: true });
 console.log('发布版本号：' + v);
 
+// 本次更新内容：优先读 release/changelog.txt(UTF-8)；其次 --changelog "XXX" 或环境变量 CHANGELOG
+function readChangelog() {
+  const f = path.join(ROOT, 'release', 'changelog.txt');
+  try { if (fs.existsSync(f)) { const c = fs.readFileSync(f, 'utf8').trim(); if (c) return c; } } catch (e) {}
+  const i = process.argv.indexOf('--changelog');
+  if (i >= 0) return String(process.argv[i + 1] || '').trim();
+  return String(process.env.CHANGELOG || '').trim();
+}
+const changelog = readChangelog();
+
 // 递增发布版本
 fs.writeFileSync(verFile, JSON.stringify({ current: ver + 1 }, null, 2), 'utf8');
 
@@ -29,6 +39,15 @@ execSync('npx electron-builder --win nsis --publish never --config.directories.o
   }),
 });
 console.log('完成。产物目录：' + outDir);
+
+// 写入更新 manifest（供更新后台使用）：最新版本 + 本次更新内容 + 安装包大小
+try {
+  const installer = path.join(outDir, '张老师随身讲-' + v + '.exe');
+  const sizeMb = fs.existsSync(installer) ? Math.round((fs.statSync(installer).size / 1048576) * 100) / 100 : 0;
+  const manifest = { latest: v, changelog: changelog || '（无更新说明）', downloadUrl: '', sizeMb };
+  fs.writeFileSync(path.join(ROOT, 'release', 'update-manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
+  console.log('已写入更新 manifest：版本=' + v + ' 更新内容="' + manifest.changelog + '"');
+} catch (e) { console.warn('写入 manifest 失败：' + (e && e.message)); }
 
 // 生成《张老师随身讲 使用说明书》PDF
 try {

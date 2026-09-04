@@ -11,17 +11,19 @@ const PORT = Number(process.env.PORT || 9577);
 const latest = process.env.LATEST_VERSION || '1.0.1023';
 const changelog = process.env.CHANGELOG || '您好这是热更新版本';
 const FILE = process.env.FILE ? path.resolve(process.cwd(), process.env.FILE) : '';
+const manifestFile = path.join(process.cwd(), 'release', 'update-manifest.json');
 
 const server = http.createServer((req, res) => {
   const u = req.url.split('?')[0];
   if (u === '/update.json') {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.end(JSON.stringify({
-      latest,
-      changelog,
-      downloadUrl: `http://127.0.0.1:${PORT}/download/package`,
-      sizeMb: FILE && fs.existsSync(FILE) ? Math.round((fs.statSync(FILE).size / 1048576) * 100) / 100 : 0,
-    }));
+    // 环境变量可覆盖(切换场景)；未设则用打包生成的 manifest
+    let m = { latest, changelog, downloadUrl: `http://127.0.0.1:${PORT}/download/package`, sizeMb: 0 };
+    if (!process.env.LATEST_VERSION) {
+      try { if (fs.existsSync(manifestFile)) { const j = JSON.parse(fs.readFileSync(manifestFile, 'utf8')); if (j.latest) m = Object.assign({}, m, j, { downloadUrl: `http://127.0.0.1:${PORT}/download/package` }); } } catch (e) {}
+    }
+    if (FILE && fs.existsSync(FILE)) m.sizeMb = Math.round((fs.statSync(FILE).size / 1048576) * 100) / 100;
+    res.end(JSON.stringify(m));
     return;
   }
   if (u === '/download/package') {

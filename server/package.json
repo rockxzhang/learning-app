@@ -1,0 +1,9 @@
+{
+  "name": "zhangjiang-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "张老师随身讲 - 用户/使用记录/管理后台 后端",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "ip2region": "^2.3.0" }
+}

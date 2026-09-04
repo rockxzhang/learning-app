@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>管理后台登录 · 张老师随身讲</title>
+<style>
+body{margin:0;background:#0f1420;color:#e8eef8;font:14px "Microsoft YaHei",sans-serif;height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#171f30;border:1px solid #26314a;border-radius:14px;padding:28px 30px;width:300px}
+h1{font-size:18px;margin:0 0 18px;color:#7dd3fc}
+label{display:block;font-size:12px;color:#9aa8c2;margin:12px 0 4px}
+input{width:100%;box-sizing:border-box;background:#10182a;border:1px solid #26314a;border-radius:8px;padding:10px 12px;color:#e8eef8;font-size:14px}
+input:focus{outline:none;border-color:#38bdf8}
+button{width:100%;margin-top:18px;background:linear-gradient(90deg,#38bdf8,#0284c7);border:0;border-radius:8px;padding:11px;color:#fff;font-size:15px;cursor:pointer}
+button:hover{opacity:.92}
+.err{color:#ff6b6b;font-size:12px;margin-top:12px;min-height:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>管理后台登录</h1>
+  <label>用户名</label><input id="u" autocomplete="username">
+  <label>密码</label><input id="p" type="password" autocomplete="current-password">
+  <div class="err" id="err"></div>
+  <button id="go">登录</button>
+</div>
+<script>
+async function login(){
+  const u=document.getElementById('u').value, p=document.getElementById('p').value, e=document.getElementById('err');
+  e.textContent='';
+  if(!u||!p){ e.textContent='请输入用户名和密码'; return; }
+  try{
+    const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const j=await r.json();
+    if(j.ok){ document.cookie='admin_token='+j.token+'; path=/; SameSite=Lax'; location.href='/admin'; }
+    else e.textContent=j.error||'登录失败';
+  }catch(err){ e.textContent='登录失败：'+err.message; }
+}
+document.getElementById('go').onclick=login;
+document.getElementById('p').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
+</script>
+</body>
+</html>

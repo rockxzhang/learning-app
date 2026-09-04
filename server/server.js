@@ -22,6 +22,21 @@ const forbidden = () => fs.readFileSync(FORBIDDEN, 'utf8').split('\n').map(s => 
 const hash = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
 const now = () => new Date().toISOString();
 
+// 管理后台固定登录
+const ADMIN_USER = process.env.ADMIN_USER || 'zhangxin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'jackyso5';
+const ADMIN_PASS_HASH = hash(ADMIN_PASS);
+let adminToken = null;
+function getCookie(req, name) {
+  const c = req.headers.cookie || '';
+  const m = c.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : '';
+}
+function isAdmin(req) {
+  const tok = getCookie(req, 'admin_token') || (req.headers['x-admin-token'] || '');
+  return !!adminToken && tok === adminToken;
+}
+
 // IP -> 城市（ip2region 离线地理库，精确到市）；回环返回本地
 let searcher = null, geoErr = null;
 function geo(ip) {
@@ -103,6 +118,14 @@ const routes = {
   },
   'GET /api/admin/users': async () => readJSON(USERF).map(u => ({ username: u.username, phone: u.phone, count: u.count, monthCount: u.monthCount || 0, month: u.month || '', createdAt: u.createdAt })),
   'GET /api/admin/usage': async () => readJSON(USAGEF),
+  'POST /api/admin/login': async (req, body) => {
+    const u = String(body.username || ''), p = String(body.password || '');
+    if (u === ADMIN_USER && hash(p) === ADMIN_PASS_HASH) {
+      adminToken = crypto.randomBytes(24).toString('hex');
+      return { ok: true, token: adminToken };
+    }
+    return { ok: false, error: '用户名或密码错误' };
+  },
 };
 
 const server = http.createServer(async (req, res) => {
@@ -113,9 +136,13 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   if (req.method === 'OPTIONS') { res.end(); return; }
   if (url === '/admin' || url === '/admin/') {
+    if (!isAdmin(req)) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(fs.readFileSync(path.join(ROOT, 'public', 'admin-login.html'), 'utf8')); return; }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.end(fs.readFileSync(path.join(ROOT, 'public', 'admin.html'), 'utf8'));
     return;
+  }
+  if (url.indexOf('/api/admin/') === 0 && url !== '/api/admin/login') {
+    if (!isAdmin(req)) { res.statusCode = 401; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ ok: false, error: '未登录' })); return; }
   }
   if (routes[key]) {
     const body = (req.method === 'POST') ? await readBody(req) : {};

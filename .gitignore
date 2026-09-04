@@ -7,3 +7,5 @@ Thumbs.db
 services/api.key
 *.key
 build/appver.json
+server/data/users.json
+server/data/usage.json

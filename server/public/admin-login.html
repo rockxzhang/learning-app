@@ -31,7 +31,7 @@ async function login(){
   try{
     const r=await fetch('api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
     const j=await r.json();
-    if(j.ok){ document.cookie='admin_token='+j.token+'; path=/; SameSite=Lax'; location.href='/admin'; }
+    if(j.ok){ document.cookie='admin_token='+j.token+'; path=/; SameSite=Lax'; location.reload(); }
     else e.textContent=j.error||'登录失败';
   }catch(err){ e.textContent='登录失败：'+err.message; }
 }

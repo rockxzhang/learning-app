@@ -21,11 +21,22 @@ const forbidden = () => fs.readFileSync(FORBIDDEN, 'utf8').split('\n').map(s => 
 const hash = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
 const now = () => new Date().toISOString();
 
-// IP -> 城市（本地模拟；正式可接 GeoIP 库/服务）
+// IP -> 城市（ip2region 离线地理库，精确到市）；回环返回本地
+let searcher = null, geoErr = null;
 function geo(ip) {
-  if (!ip || ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') return '本地（回环）';
-  // 模拟：给出占位城市（真实场景接入 IP 地理库）
-  return '未知地区';
+  const norm = String(ip || '').replace(/^::ffff:/, '');
+  if (!norm || norm === '127.0.0.1' || norm === '::1') return '本地（回环）';
+  try {
+    if (!searcher) {
+      const Searcher = require('ip2region').default;
+      const db = process.env.IP2REGION_DB || path.join(__dirname, '..', 'node_modules', 'ip2region', 'data', 'ip2region.db');
+      searcher = new Searcher(db);
+    }
+    const r = searcher.search(norm);
+    if (!r || !r.city) return '未知地区';
+    if (r.city === '内网IP') return '本地（回环）';
+    return [r.country, r.province, r.city].filter(Boolean).join('·');
+  } catch (e) { geoErr = e; return '未知地区'; }
 }
 function clientIp(req) {
   const fwd = req.headers['x-forwarded-for'];

@@ -15,6 +15,7 @@
     "server": "node server/server.js"
   },
   "dependencies": {
+    "ip2region": "^2.3.0",
     "mammoth": "^1.8.0",
     "pdf-parse": "^1.1.1",
     "ws": "^8.18.0"
@@ -27,9 +28,21 @@
     "appId": "com.rockxzhang.learning",
     "productName": "张老师随身讲",
     "icon": "build/icon.ico",
-    "files": ["main.js", "preload.js", "renderer/**", "services/**", "scripts/**", "build/**"],
-    "win": { "target": "nsis", "artifactName": "张老师随身讲-${env.APP_VERSION}.${ext}" },
-    "portable": { "artifactName": "张老师随身讲-${env.APP_VERSION}-便携版.${ext}" },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "services/**",
+      "scripts/**",
+      "build/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "张老师随身讲-${env.APP_VERSION}.${ext}"
+    },
+    "portable": {
+      "artifactName": "张老师随身讲-${env.APP_VERSION}-便携版.${ext}"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

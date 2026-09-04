@@ -1,5 +1,5 @@
 // main.js - Electron 主进程 for 张老师随身讲
-const { app, BrowserWindow, ipcMain, dialog, desktopCapturer, screen, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, desktopCapturer, screen, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -82,6 +82,39 @@ ipcMain.handle('avatar:getImage', () => {
     try { if (fs.existsSync(p)) { const ext = path.extname(p).slice(1).toLowerCase(); return 'data:image/' + ext + ';base64,' + fs.readFileSync(p).toString('base64'); } } catch (e) {}
   }
   return null;
+});
+
+// ---- 版本升级管理 ----
+function curVersion() {
+  try { const v = JSON.parse(fs.readFileSync(path.join(__dirname, 'build', 'appver.json'), 'utf8')).ver; return '1.0.' + (v || 1000); }
+  catch (e) { return '1.0.1000'; }
+}
+ipcMain.handle('update:check', async () => {
+  const cfg = services.config.load(DATA_DIR);
+  const cur = curVersion();
+  try { return await services.update.check(cfg.updateUrl, cur); }
+  catch (e) { return { hasUpdate: false, error: String((e && e.message) || e) }; }
+});
+ipcMain.handle('update:download', async (e, url, sizeMb) => {
+  const dir = path.join(DATA_DIR, 'update');
+  fs.mkdirSync(dir, { recursive: true });
+  const dest = path.join(dir, '张老师随身讲-update.exe');
+  try { await services.update.download(url, dest, (rec, total) => { if (win) win.webContents.send('update:progress', { received: rec, total }); }); }
+  catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+  // 大版本：在安装目录下创建 update 文件夹并放入安装包（本轮下载已存 DATA_DIR，此处再复制到 exe 旁的 update/）
+  try {
+    const instDir = path.dirname(app.getPath('exe'));
+    const updDir = path.join(instDir, 'update');
+    fs.mkdirSync(updDir, { recursive: true });
+    fs.copyFileSync(dest, path.join(updDir, '张老师随身讲-update.exe'));
+  } catch (e) {}
+  return { ok: true, path: dest };
+});
+ipcMain.handle('update:apply', async (e, type, filePath) => {
+  if (type === 'patch') return { ok: true, hot: true };          // 小版本热更：仅完成(模拟刷新)
+  try { if (filePath && fs.existsSync(filePath)) await shell.openPath(filePath); } catch (e) {}   // 拉起安装流程
+  setTimeout(() => { try { app.quit(); } catch (e) { process.exit(0); } }, 1500);                // 关闭软件
+  return { ok: true, launching: true };
 });
 
 // 保存文件（下载代码/讲解）

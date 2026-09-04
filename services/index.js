@@ -6,4 +6,5 @@ const tts = require('./tts');
 const memory = require('./memory');
 const pipeline = require('./pipeline');
 const screenshot = require('./screenshot');
-module.exports = { config, parseFile, analyze, tts, memory, pipeline, screenshot };
+const update = require('./update');
+module.exports = { config, parseFile, analyze, tts, memory, pipeline, screenshot, update };

@@ -406,4 +406,53 @@
   }
 
   boot();
+
+  // ---- 版本升级管理 ----
+  let upd = null;
+  function showProg2(pct) { const p = $('uProg'); p.classList.add('show'); $('uFill').style.width = (pct || 0) + '%'; $('uPct').textContent = Math.round(pct || 0) + '%'; }
+  function openUpdate(u) {
+    upd = u;
+    $('updateMask').hidden = false;
+    $('uCur').textContent = 'V' + (u.curVersion || '--');
+    $('uNew').textContent = 'V' + u.latest;
+    const typeMap = { major: '大版本（整包重装）', minor: '中版本（差分安装）', patch: '小版本（热更）' };
+    $('uType').textContent = typeMap[u.type] || u.type;
+    $('uLog').textContent = u.changelog || '（无更新说明）';
+    $('uProg').classList.remove('show');
+    $('uFill').style.width = '0%'; $('uPct').textContent = '0%';
+    $('uGoBtn').disabled = false; $('uGoBtn').textContent = '开始更新';
+  }
+  function closeUpdate() { $('updateMask').hidden = true; upd = null; }
+  async function checkUpdate() {
+    try { const u = await api.updateCheck(); if (u && u.hasUpdate) { $('updateDot').hidden = false; window.__update = u; } } catch (e) {}
+  }
+  $('updateDot').onclick = () => { if (window.__update) openUpdate(window.__update); };
+  $('uCloseBtn').onclick = closeUpdate;
+  $('uCloseX').onclick = closeUpdate;
+  $('uGoBtn').onclick = async () => {
+    if (!upd) return;
+    $('uGoBtn').disabled = true; $('uGoBtn').textContent = '更新中…';
+    showProg2(0);
+    try {
+      if (upd.type === 'patch') {
+        // 热更：仅进度条（模拟），完成后刷新
+        let p = 0;
+        await new Promise((res) => {
+          const t = setInterval(() => { p += 5; showProg2(p); if (p >= 100) { clearInterval(t); res(); } }, 70);
+        });
+        api.updateApply('patch', null).catch(() => {});
+        $('uLog').textContent = '热更新完成，界面已刷新（本地模拟）。'; toast('热更新完成');
+        $('uGoBtn').disabled = true; $('uGoBtn').textContent = '已完成';
+      } else {
+        const d = await api.updateDownload(upd.downloadUrl);
+        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '开始更新'; return; }
+        showProg2(100);
+        await api.updateApply(upd.type, d.path);
+        $('uLog').textContent = '正在拉起安装程序，随后软件将关闭…'; $('uGoBtn').textContent = '正在安装…';
+      }
+      window.__updDone = true;
+    } catch (e) { toast('更新失败：' + e.message); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '开始更新'; }
+  };
+  api.onUpdateProgress((p) => { if (!p || !p.total) return; showProg2((p.received / p.total) * 100); });
+  checkUpdate();
 })();

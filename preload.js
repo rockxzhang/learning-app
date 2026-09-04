@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld('api', {
   memoryProfile: () => ipcRenderer.invoke('memory:profile'),
   markWeak: (title, weakPoints) => ipcRenderer.invoke('memory:weak', title, weakPoints),
   versionCurrent: () => ipcRenderer.invoke('version:current'),
+  updateCheck: () => ipcRenderer.invoke('update:check'),
+  updateDownload: (url) => ipcRenderer.invoke('update:download', url),
+  updateApply: (type, filePath) => ipcRenderer.invoke('update:apply', type, filePath),
+  onUpdateProgress: (cb) => ipcRenderer.on('update:progress', (e, p) => cb(p)),
   onLog: (cb) => ipcRenderer.on('teach:log', (e, m) => cb(m)),
   onProgress: (cb) => ipcRenderer.on('teach:progress', (e, p) => cb(p)),
 });

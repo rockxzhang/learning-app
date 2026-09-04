@@ -29,7 +29,7 @@ async function login(){
   e.textContent='';
   if(!u||!p){ e.textContent='请输入用户名和密码'; return; }
   try{
-    const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const r=await fetch('api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
     const j=await r.json();
     if(j.ok){ document.cookie='admin_token='+j.token+'; path=/; SameSite=Lax'; location.href='/admin'; }
     else e.textContent=j.error||'登录失败';

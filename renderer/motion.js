@@ -1,4 +1,4 @@
-// renderer/motion.js - Apple 风格动效：Aurora 背景 / SpotlightCard 跟随 / 磁力按钮 / 呼吸遮罩
+// renderer/motion.js - Apple 风格动效：Aurora 背景 / 磁力按钮
 (function () {
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -37,29 +37,7 @@
     })();
   }
 
-  // ---- SpotlightCard：卡片内鼠标径向高光跟随（--mx/--my） ----
-  document.addEventListener('mousemove', function (e) {
-    document.querySelectorAll('.panel').forEach(function (el) {
-      const r = el.getBoundingClientRect();
-      el.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(2) + '%');
-      el.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(2) + '%');
-    });
-  }, { passive: true });
-
-  // ---- 磁力按钮：按钮被光标轻微吸引并回弹 ----
-  if (!reduce) {
-    document.querySelectorAll('.btn').forEach(function (btn) {
-      btn.addEventListener('mousemove', function (e) {
-        const r = btn.getBoundingClientRect();
-        const dx = e.clientX - (r.left + r.width / 2);
-        const dy = e.clientY - (r.top + r.height / 2);
-        btn.style.transform = 'translate(' + (dx * 0.18) + 'px,' + (dy * 0.18 + -2) + 'px) scale(1.05)';
-      });
-      btn.addEventListener('mouseleave', function () { btn.style.transform = ''; });
-    });
-  }
-
-  // ---- 讲解黑板/面板入场：行错落淡入 ----
+  // ---- 卡片入场 ----
   if (!reduce) {
     document.addEventListener('DOMContentLoaded', function () {
       const panel = document.querySelector('.panel');

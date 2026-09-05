@@ -25,6 +25,8 @@ async function callLLM(cfgObj, contentParts) {
     return { text: String(o.text || ''), from: o.from == null ? null : Number(o.from), to: o.to == null ? null : Number(o.to) };
   });
   if (!Array.isArray(obj.knowledgePoints)) obj.knowledgePoints = [];
+  const du = data.usage || {};
+  obj.usage = { input: du.prompt_tokens || 0, output: du.completion_tokens || 0 };   // 计费用 token 用量
   return obj;
 }
 

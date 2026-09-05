@@ -138,7 +138,7 @@ ipcMain.handle('teach:run', async (e, cfg, filePath) => {
     // 解题成功：自动上报一条使用记录（后台记 IP/城市/时间/累计次数）
     if (res && res.ok) {
       try {
-        services.account.record(DATA_DIR, cfg).then((r) => { if (r && !r.ok && r.error) { try { win.webContents.send('teach:log', '⚠️ ' + r.error); } catch (e) {} } }).catch(() => {});
+        services.account.record(DATA_DIR, cfg, res.uses).then((r) => { if (r && !r.ok && r.error) { try { win.webContents.send('teach:log', '⚠️ ' + r.error); } catch (e) {} } }).catch(() => {});
       } catch (e) {}
     }
     return res;

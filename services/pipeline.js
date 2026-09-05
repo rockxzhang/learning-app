@@ -48,6 +48,7 @@ async function run(dataDir, cfg, filePath, log, progress) {
       ok: true, version, title: model.title || info.name, fileName: info.name,
       code: model.code || '', solution: model.solution || '',
       teaching: model.teaching || [], knowledgePoints: model.knowledgePoints || [],
+      uses: model.usage || { input: 0, output: 0 },   // 模型计费用 token 用量
       audio,
     };
   } catch (err) {

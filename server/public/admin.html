@@ -4,18 +4,21 @@
 <meta charset="utf-8">
 <title>管理后台 · 张老师随身讲</title>
 <style>
-body{margin:0;background:#0f1420;color:#e8eef8;font:14px "Microsoft YaHei",sans-serif;padding:24px}
-h1{font-size:20px;margin:0 0 16px}
-h2{font-size:15px;margin:22px 0 8px;color:#7dd3fc}
-.cards{display:flex;gap:16px}
-.card{background:#171f30;border:1px solid #26314a;border-radius:12px;padding:16px 22px;min-width:150px}
-.card b{font-size:28px;color:#38bdf8;display:block}
-.card span{color:#9aa8c2;font-size:12px}
-table{width:100%;border-collapse:collapse;background:#141b2b;border-radius:10px;overflow:hidden}
-th,td{border-bottom:1px solid #26314a;padding:8px 12px;text-align:left;font-size:13px}
-th{background:#1a2233;color:#9aa8c2;font-weight:600}
-tr:hover td{background:rgba(56,189,248,.06)}
-.muted{color:#7a89a8}
+body{margin:0;background:#f5f5f7;color:#1d1d1f;font:14px "Microsoft YaHei",-apple-system,sans-serif;padding:24px}
+h1{font-size:20px;margin:0 0 16px;color:#1d1d1f}
+h2{font-size:15px;margin:22px 0 8px;color:#007AFF}
+.cards{display:flex;gap:16px;flex-wrap:wrap}
+.card{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:16px 22px;min-width:150px;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+.card b{font-size:26px;color:#007AFF;display:block}
+.card span{color:#666;font-size:12px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+th,td{border-bottom:1px solid #eee;padding:8px 12px;text-align:left;font-size:13px}
+th{background:#fafafa;color:#666;font-weight:600}
+tr:hover td{background:#f7faff}
+.muted{color:#999}
+.cost{color:#c25e00;font-weight:600}
+.chart{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+#ctrend{width:100%;height:220px}
 </style>
 </head>
 <body>
@@ -23,27 +26,57 @@ tr:hover td{background:rgba(56,189,248,.06)}
 <div class="cards">
   <div class="card"><b id="uCount">0</b><span>注册用户数</span></div>
   <div class="card"><b id="gCount">0</b><span>使用记录数</span></div>
+  <div class="card"><b id="totalCost">¥0.00</b><span>所有用户总费用</span></div>
 </div>
 
-<h2>用户列表（用户名 / 手机号 / 累计次数 / 注册时间）</h2>
-<table><thead><tr><th>用户名</th><th>手机号</th><th>累计次数</th><th>注册时间</th></tr></thead><tbody id="users"></tbody></table>
+<h2>费用走势（每 5 分钟 · 近24小时）</h2>
+<div class="chart"><svg id="ctrend" viewBox="0 0 900 220" preserveAspectRatio="none"></svg></div>
 
-<h2>使用记录（动态更新：IP / 城市 / 用户名 / 手机号 / 使用时间 / 累计次数）</h2>
-<table><thead><tr><th>IP</th><th>城市</th><th>用户名</th><th>手机号</th><th>使用时间</th><th>累计次数</th></tr></thead><tbody id="usage"></tbody></table>
+<h2>用户列表（用户名 / 手机号 / 累计次数 / 累计费用 / 注册时间）</h2>
+<table><thead><tr><th>用户名</th><th>手机号</th><th>累计次数</th><th>累计费用</th><th>注册时间</th></tr></thead><tbody id="users"></tbody></table>
+
+<h2>使用记录（每次：IP / 城市 / 用户名 / 手机号 / 时间 / 累计次数 / 费用）</h2>
+<table><thead><tr><th>IP</th><th>城市</th><th>用户名</th><th>手机号</th><th>使用时间</th><th>累计次数</th><th>费用</th></tr></thead><tbody id="usage"></tbody></table>
 
 <script>
 async function j(u){ const r=await fetch(u); return r.json(); }
 function esc(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function money(v){ return '¥' + (Number(v)||0).toFixed(4); }
+
+function renderChart(points){
+  const svg=document.getElementById('ctrend');
+  const W=900,H=220,P=10;
+  if(!points||!points.length){ svg.innerHTML='<text x="450" y="110" fill="#999" text-anchor="middle">暂无数据</text>'; return; }
+  const minT=Math.min(...points.map(p=>p.tTime)), maxT=Math.max(...points.map(p=>p.tTime));
+  const maxC=Math.max(...points.map(p=>p.cost),0.0001);
+  const X=(t)=>P+((t-minT)/(Math.max(1,maxT-minT)))*(W-2*P);
+  const Y=(c)=>H-P-(c/maxC)*(H-2*P);
+  const pts=points.map(p=>X(p.tTime)+','+Y(p.cost)).join(' ');
+  let s='';
+  s+='<line x1="'+P+'" y1="'+(H-P)+'" x2="'+(W-P)+'" y2="'+(H-P)+'" stroke="#eee" stroke-width="1"/>';
+  s+='<polygon points="'+X(points[0].tTime)+','+(H-P)+' '+pts+' '+X(points[points.length-1].tTime)+','+(H-P)+'" fill="rgba(0,122,255,.08)"/>';
+  s+='<polyline points="'+pts+'" fill="none" stroke="#007AFF" stroke-width="2.5" stroke-linejoin="round"/>';
+  for(const p of points){ s+='<circle cx="'+X(p.tTime)+'" cy="'+Y(p.cost)+'" r="2.5" fill="#007AFF"/>'; }
+  s+='<text x="'+P+'" y="'+(H-2)+'" fill="#999" font-size="11">'+esc(fmtT(points[0].tLabel))+'</text>';
+  s+='<text x="'+(W-P)+'" y="'+(H-2)+'" fill="#999" font-size="11" text-anchor="end">'+esc(fmtT(points[points.length-1].tLabel))+'</text>';
+  svg.innerHTML=s;
+}
+function fmtT(s){ const d=new Date(s); return (d.getHours()<10?'0':'')+d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes(); }
+
 async function load(){
   const s=await j('api/admin/stats');
   document.getElementById('uCount').textContent=s.userCount||0;
   document.getElementById('gCount').textContent=s.usageCount||0;
+  document.getElementById('totalCost').textContent=money(s.totalCost);
   const users=await j('api/admin/users');
-  document.getElementById('users').innerHTML=users.map(u=>'<tr><td>'+esc(u.username)+'</td><td>'+esc(u.phone)+'</td><td>'+u.count+'</td><td class="muted">'+esc(u.createdAt||'')+'</td></tr>').join('')||'<tr><td colspan="4" class="muted">暂无用户</td></tr>';
+  document.getElementById('users').innerHTML=users.map(u=>'<tr><td>'+esc(u.username)+'</td><td>'+esc(u.phone)+'</td><td>'+u.count+'</td><td class="cost">'+money(u.cost)+'</td><td class="muted">'+esc(u.createdAt||'')+'</td></tr>').join('')||'<tr><td colspan="5" class="muted">暂无用户</td></tr>';
   const usage=await j('api/admin/usage');
-  document.getElementById('usage').innerHTML=usage.slice().reverse().map(u=>'<tr><td>'+esc(u.ip)+'</td><td>'+esc(u.city)+'</td><td>'+esc(u.username)+'</td><td>'+esc(u.phone)+'</td><td class="muted">'+esc(u.time)+'</td><td>'+u.count+'</td></tr>').join('')||'<tr><td colspan="6" class="muted">暂无记录</td></tr>';
+  document.getElementById('usage').innerHTML=usage.slice().reverse().map(u=>'<tr><td>'+esc(u.ip)+'</td><td>'+esc(u.city)+'</td><td>'+esc(u.username)+'</td><td>'+esc(u.phone)+'</td><td class="muted">'+esc(u.time)+'</td><td>'+u.count+'</td><td class="cost">'+money(u.cost)+'</td></tr>').join('')||'<tr><td colspan="7" class="muted">暂无记录</td></tr>';
+  const trend=await j('api/admin/costtrend');
+  renderChart(trend.map(x=>({tTime:Date.parse(x.t), tLabel:x.t, cost:x.cost})));
 }
-load(); setInterval(load, 3000);
+load();
+setInterval(load, 180000);   // 3 分钟自动刷新
 </script>
 </body>
 </html>

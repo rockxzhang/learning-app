@@ -21,11 +21,12 @@ async function login(dir, cfg, identifier, password) {
   if (r.ok) saveSession(dir, { username: r.username, phone: r.phone });
   return r;
 }
-// 记录一次使用（后台记 IP/城市/时间/累计次数），需已登录
-async function record(dir, cfg) {
+// 记录一次使用（后台记 IP/城市/时间/累计次数 + 高峰/全谷计费），需已登录
+async function record(dir, cfg, uses) {
   const s = loadSession(dir);
   if (!s || !s.username) return { ok: false, error: '未登录' };
-  try { return await post(cfg, '/api/usage', { username: s.username, phone: s.phone }); }
+  const u = uses || {};
+  try { return await post(cfg, '/api/usage', { username: s.username, phone: s.phone, input_tokens: u.input || 0, output_tokens: u.output || 0 }); }
   catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
 }
 // 我的信息（累计次数 / 本月次数 / 上限）

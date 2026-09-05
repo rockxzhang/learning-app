@@ -11,6 +11,17 @@ const USAGEF = path.join(DATA, 'usage.json');
 const FORBIDDEN = path.join(DATA, 'forbidden.txt');
 const PORT = Number(process.env.PORT || 9588);
 const MONTH_LIMIT = Number(process.env.MONTH_LIMIT || 600);   // 每月使用次数封顶
+
+// 计费：模型单价(元/百万tokens) × 高峰/全谷时段(北京 00:30-08:30 为全谷，折价)
+const INPUT_PER_1M = Number(process.env.INPUT_PER_1M || 1.5);   // 输入(含图)单价
+const OUTPUT_PER_1M = Number(process.env.OUTPUT_PER_1M || 6.0); // 输出单价
+const VALLEY_MULT = Number(process.env.VALLEY_MULT || 0.5);     // 全谷折扣
+function isValley(d) { const m = d.getHours() * 60 + d.getMinutes(); return m >= 30 && m < 8 * 60 + 30; }  // 00:30–08:30 全谷
+function calcCost(input, output, d) {
+  const mult = isValley(d) ? VALLEY_MULT : 1;
+  const c = (input / 1e6) * INPUT_PER_1M * mult + (output / 1e6) * OUTPUT_PER_1M * mult;
+  return Math.round(c * 10000) / 10000;
+}
 fs.mkdirSync(DATA, { recursive: true });
 if (!fs.existsSync(USERF)) fs.writeFileSync(USERF, '[]', 'utf8');
 if (!fs.existsSync(USAGEF)) fs.writeFileSync(USAGEF, '[]', 'utf8');
@@ -98,11 +109,15 @@ const routes = {
     if ((u.monthCount || 0) >= MONTH_LIMIT) return { ok: false, error: '本月使用次数已达上限（' + MONTH_LIMIT + ' 次）' };
     u.monthCount = (u.monthCount || 0) + 1;
     u.count = (u.count || 0) + 1;
+    // 计费：按本次 token 用量 + 高峰/全谷时段
+    const input_t = Number(body.input_tokens || 0), output_t = Number(body.output_tokens || 0);
+    const cost = calcCost(input_t, output_t, new Date());
+    u.cost = Math.round(((u.cost || 0) + cost) * 10000) / 10000;   // 用户累计费用
     writeJSON(USERF, users);
     const usage = readJSON(USAGEF);
-    usage.push({ username, phone, ip: clientIp(req), city: geo(clientIp(req)), time: d, count: u.count, monthCount: u.monthCount });
+    usage.push({ username, phone, ip: clientIp(req), city: geo(clientIp(req)), time: d, count: u.count, monthCount: u.monthCount, inputTokens: input_t, outputTokens: output_t, cost });
     writeJSON(USAGEF, usage);
-    return { ok: true, count: u.count, monthCount: u.monthCount, month: u.month };
+    return { ok: true, count: u.count, monthCount: u.monthCount, month: u.month, cost };
   },
   'POST /api/info': async (req, body) => {
     const username = String(body.username || '').trim();
@@ -111,13 +126,26 @@ const routes = {
     if (!u) return { ok: false, error: '未找到用户' };
     const mkey = now().slice(0, 7);
     const monthCount = u.month === mkey ? (u.monthCount || 0) : 0;
-    return { ok: true, username: u.username, phone: u.phone, count: u.count || 0, monthCount, month: mkey, limit: MONTH_LIMIT };
+    return { ok: true, username: u.username, phone: u.phone, count: u.count || 0, monthCount, month: mkey, limit: MONTH_LIMIT, cost: u.cost || 0 };
   },
   'GET /api/admin/stats': async () => {
-    return { ok: true, userCount: readJSON(USERF).length, usageCount: readJSON(USAGEF).length };
+    const usage = readJSON(USAGEF);
+    return { ok: true, userCount: readJSON(USERF).length, usageCount: usage.length, totalCost: Math.round(usage.reduce((s, x) => s + (x.cost || 0), 0) * 10000) / 10000 };
   },
-  'GET /api/admin/users': async () => readJSON(USERF).map(u => ({ username: u.username, phone: u.phone, count: u.count, monthCount: u.monthCount || 0, month: u.month || '', createdAt: u.createdAt })),
+  'GET /api/admin/users': async () => readJSON(USERF).map(u => ({ username: u.username, phone: u.phone, count: u.count, monthCount: u.monthCount || 0, month: u.month || '', cost: u.cost || 0, createdAt: u.createdAt })),
   'GET /api/admin/usage': async () => readJSON(USAGEF),
+  'GET /api/admin/costtrend': async () => {
+    // 按 5 分钟区间汇总费用走势（近 24h）
+    const nowms = Date.now(); const start = nowms - 24 * 3600 * 1000;
+    const buckets = {};
+    for (const x of readJSON(USAGEF)) {
+      const t = new Date(x.time).getTime();
+      if (!(t >= start)) continue;
+      const k = Math.floor(t / 300000) * 300000;   // 5 分钟桶
+      buckets[k] = (buckets[k] || 0) + (x.cost || 0);
+    }
+    return Object.keys(buckets).sort((a, b) => a - b).map(k => ({ t: new Date(Number(k)).toISOString(), cost: Math.round(buckets[k] * 10000) / 10000 }));
+  },
   'POST /api/admin/login': async (req, body) => {
     const u = String(body.username || ''), p = String(body.password || '');
     if (u === ADMIN_USER && hash(p) === ADMIN_PASS_HASH) {

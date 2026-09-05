@@ -110,8 +110,8 @@ function renderChart(points){
     +'<linearGradient id="lineG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="'+CFG.g1+'"/><stop offset="1" stop-color="'+CFG.g2+'"/></linearGradient></defs>';
   // Y 网格 + 美观刻度
   for(const c of n.ticks){ const y=Math.round(Y(c)); s+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#eef0f4" stroke-width="1"/>'; s+='<text class="ylab" x="'+(L-10)+'" y="'+(y+4)+'" text-anchor="end">'+fmtNum(c)+'</text>'; }
-  // X 轴：每 5 分钟一个旋转标签
-  for(const p of points){ const x=Math.round(X(p.tTime)); s+='<g transform="translate('+x+','+(H-B)+')"><line x1="0" y1="0" x2="0" y2="4" stroke="#d5dae2"/><text class="xlabel" transform="rotate(-45)" x="4" y="13" text-anchor="end">'+esc(fmtT(p.tLabel))+'</text></g>'; }
+  // X 轴：每 30 分钟一个标签(数据仍 5 分钟精度)，其余刻度细线
+  for(const p of points){ const x=Math.round(X(p.tTime)); const mins=(new Date(p.tTime).getMinutes()); if(mins%30===0){ s+='<g transform="translate('+x+','+(H-B)+')"><line x1="0" y1="0" x2="0" y2="5" stroke="#d5dae2"/><text class="xlabel" transform="rotate(-45)" x="5" y="14" text-anchor="end">'+esc(fmtT(p.tLabel))+'</text></g>'; } else { s+='<line x1="'+x+'" y1="'+(H-B)+'" x2="'+x+'" y2="'+(H-B+3)+'" stroke="#e4e8ee"/>'; } }
   // 曲线(平滑/折线) + 渐变面积 + 节点
   const xy=points.map(p=>[X(p.tTime), Y(p.cost)]);
   const linePath=smoothPath(xy);

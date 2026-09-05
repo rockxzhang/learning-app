@@ -27,6 +27,29 @@ if (!fs.existsSync(USERF)) fs.writeFileSync(USERF, '[]', 'utf8');
 if (!fs.existsSync(USAGEF)) fs.writeFileSync(USAGEF, '[]', 'utf8');
 if (!fs.existsSync(FORBIDDEN)) fs.writeFileSync(FORBIDDEN, 'admin\nroot\ntest\n张老师\n管理员\n系统\n'.slice(0, -1), 'utf8');
 
+// 回填历史费用：旧记录无 token 用量 → 用代表性默认值按发生时段的峰/谷估价，并重算各用户累计费用
+const BACKFILL_INPUT = Number(process.env.BACKFILL_INPUT || 3000);
+const BACKFILL_OUTPUT = Number(process.env.BACKFILL_OUTPUT || 1500);
+function backfillCosts() {
+  const users = readJSON(USERF), usage = readJSON(USAGEF);
+  let uChanged = false;
+  for (const x of usage) {
+    if (typeof x.cost !== 'number' || x.cost == null) {
+      const it = Number(x.inputTokens) || BACKFILL_INPUT, ot = Number(x.outputTokens) || BACKFILL_OUTPUT;
+      x.inputTokens = it; x.outputTokens = ot;
+      x.cost = calcCost(it, ot, new Date(x.time)); uChanged = true;
+    }
+  }
+  if (uChanged) writeJSON(USAGEF, usage);
+  let userChanged = false;
+  for (const u of users) {
+    const sum = usage.filter(x => x.username === u.username && x.phone === u.phone).reduce((s, x) => s + (x.cost || 0), 0);
+    const rc = Math.round(sum * 10000) / 10000;
+    if ((u.cost || 0) !== rc) { u.cost = rc; userChanged = true; }
+  }
+  if (userChanged) writeJSON(USERF, users);
+}
+
 const readJSON = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return []; } };
 const writeJSON = (f, a) => fs.writeFileSync(f, JSON.stringify(a, null, 2), 'utf8');
 const forbidden = () => fs.readFileSync(FORBIDDEN, 'utf8').split('\n').map(s => s.trim()).filter(Boolean);
@@ -156,6 +179,7 @@ const routes = {
   },
 };
 
+backfillCosts();   // 回填历史费用（需在 readJSON/writeJSON 定义后调用）
 const server = http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
   const key = req.method + ' ' + url;

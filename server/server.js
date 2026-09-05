@@ -12,11 +12,18 @@ const FORBIDDEN = path.join(DATA, 'forbidden.txt');
 const PORT = Number(process.env.PORT || 9588);
 const MONTH_LIMIT = Number(process.env.MONTH_LIMIT || 600);   // 每月使用次数封顶
 
-// 计费：模型单价(元/百万tokens) × 高峰/全谷时段(北京 00:30-08:30 为全谷，折价)
-const INPUT_PER_1M = Number(process.env.INPUT_PER_1M || 1.5);   // 输入(含图)单价
-const OUTPUT_PER_1M = Number(process.env.OUTPUT_PER_1M || 6.0); // 输出单价
-const VALLEY_MULT = Number(process.env.VALLEY_MULT || 0.5);     // 全谷折扣
-function isValley(d) { const m = d.getHours() * 60 + d.getMinutes(); return m >= 30 && m < 8 * 60 + 30; }  // 00:30–08:30 全谷
+// 计费：DeepSeek-V4-Flash-Vision-Exp 官方单价(元/百万tokens, 缓存未命中) × 高峰/全谷(北京时间)
+const INPUT_PER_1M = Number(process.env.INPUT_PER_1M || 3);   // 高峰输入(缓存未命中)
+const OUTPUT_PER_1M = Number(process.env.OUTPUT_PER_1M || 9); // 高峰输出
+const VALLEY_MULT = Number(process.env.VALLEY_MULT || 0.5);   // 全谷=高峰×0.5
+// 高峰时段(北京时间)：工作日 09:00-12:00 与 14:00-18:00；其余(含周末)为全谷
+function isValley(d) {
+  const b = new Date(d.getTime() + 8 * 3600 * 1000);   // 转北京时间
+  const dow = b.getUTCDay(), h = b.getUTCHours();
+  if (dow === 0 || dow === 6) return true;              // 周末全谷
+  const peak = (h >= 9 && h < 12) || (h >= 14 && h < 18);
+  return !peak;
+}
 function calcCost(input, output, d) {
   const mult = isValley(d) ? VALLEY_MULT : 1;
   const c = (input / 1e6) * INPUT_PER_1M * mult + (output / 1e6) * OUTPUT_PER_1M * mult;

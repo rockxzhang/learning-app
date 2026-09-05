@@ -315,6 +315,7 @@
     $('kpoint').textContent = (res.knowledgePoints || []).slice(0, 2).map((k) => k).join('、') || '知识点';
     renderCode(res.code);
     $('solution').innerHTML = mdToHtml(res.solution) || '<span class="empty">未生成思路</span>';
+    updateSolFade();
     playlist = res.audio || [];
     renderTranscript();
     $('dlCodeBtn').disabled = false;
@@ -418,6 +419,14 @@
   }
 
   boot();
+
+  // ---- 解题思路：内容溢出时，底部渐变模糊提示可继续滚动 ----
+  function updateSolFade() {
+    const el = $('solution'); const pb = el && el.closest('.panel-body.sol');
+    if (pb) pb.classList.toggle('hasfade', el.scrollHeight > el.clientHeight + 4);
+  }
+  window.addEventListener('resize', updateSolFade);
+  $('solution').addEventListener('scroll', updateSolFade);
 
   // ---- 用户账号（注册/登录/会话） ----
   let me = null;   // 当前登录用户 {username}

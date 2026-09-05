@@ -165,16 +165,28 @@ const routes = {
   'GET /api/admin/users': async () => readJSON(USERF).map(u => ({ username: u.username, phone: u.phone, count: u.count, monthCount: u.monthCount || 0, month: u.month || '', cost: u.cost || 0, createdAt: u.createdAt })),
   'GET /api/admin/usage': async () => readJSON(USAGEF),
   'GET /api/admin/costtrend': async () => {
-    // 按 5 分钟区间汇总费用走势（近 24h）
-    const nowms = Date.now(); const start = nowms - 24 * 3600 * 1000;
+    // 起算点：当天(北京) 06:00；若当前不到 06:00 则回退到昨日 06:00
+    const BJ = 8 * 3600 * 1000;
+    const bj = new Date(Date.now() + BJ);
+    let startBj = new Date(Date.UTC(bj.getUTCFullYear(), bj.getUTCMonth(), bj.getUTCDate(), 6, 0, 0));
+    if (startBj.getTime() > bj.getTime()) startBj = new Date(startBj.getTime() - 24 * 3600 * 1000);
+    const startMs = startBj.getTime() - BJ;   // 转 UTC 毫秒
+    const now5 = Math.floor(Date.now() / 300000) * 300000;
+    // 各 5 分钟桶的费用
     const buckets = {};
     for (const x of readJSON(USAGEF)) {
       const t = new Date(x.time).getTime();
-      if (!(t >= start)) continue;
-      const k = Math.floor(t / 300000) * 300000;   // 5 分钟桶
+      if (t < startMs || t > now5) continue;
+      const k = Math.floor(t / 300000) * 300000;
       buckets[k] = (buckets[k] || 0) + (x.cost || 0);
     }
-    return Object.keys(buckets).sort((a, b) => a - b).map(k => ({ t: new Date(Number(k)).toISOString(), cost: Math.round(buckets[k] * 10000) / 10000 }));
+    // 每 5 分钟一个点，显示自 06:00 起的累计总消耗费用
+    const out = []; let run = 0;
+    for (let s = startMs; s <= now5; s += 300000) {
+      if (buckets[s]) run += buckets[s];
+      out.push({ t: new Date(s).toISOString(), cost: Math.round(run * 10000) / 10000 });
+    }
+    return out;
   },
   'POST /api/admin/login': async (req, body) => {
     const u = String(body.username || ''), p = String(body.password || '');

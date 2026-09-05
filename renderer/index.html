@@ -191,6 +191,44 @@ button{cursor:pointer;font-family:inherit}
 .finput{width:100%;box-sizing:border-box;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;color:var(--fg);font-size:14px;transition:border-color .2s,box-shadow .2s}
 .finput:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(0,122,255,.2)}
 .ferr{color:#FF3B30;font-size:12px;margin-top:10px;min-height:16px;white-space:pre-wrap}
+
+/* ============ 夜间黑色主题 (data-theme="dark") ============ */
+[data-theme="dark"]{
+  --bg:#000000; --bg2:#0a0a0c;
+  --glass:rgba(255,255,255,.06); --glass2:rgba(255,255,255,.04); --glass3:rgba(255,255,255,.1);
+  --line:rgba(255,255,255,.12); --line2:rgba(255,255,255,.22);
+  --fg:#f5f5f7; --mut:rgba(235,235,245,.6);
+  --shadow:0 10px 40px rgba(0,0,0,.55), 0 2px 10px rgba(0,0,0,.4);
+}
+[data-theme="dark"] body{background:#000}
+[data-theme="dark"] .header{background:rgba(20,20,24,.5)}
+[data-theme="dark"] .panel-head{background:rgba(255,255,255,.03)}
+[data-theme="dark"] .btn.ghost{background:var(--glass);color:var(--fg)}
+[data-theme="dark"] .btn.ghost:hover{background:var(--glass3)}
+[data-theme="dark"] .mini{background:var(--glass)}
+[data-theme="dark"] .controls{background:rgba(255,255,255,.02)}
+[data-theme="dark"] .rate select{background:rgba(0,0,0,.4)}
+[data-theme="dark"] #code{color:#e9edf5}
+[data-theme="dark"] .cl-row:nth-child(even){background:rgba(255,255,255,.014)}
+[data-theme="dark"] .cl .cm{color:#8aa38b}
+[data-theme="dark"] .cl .kw{color:#8ab4ff}
+[data-theme="dark"] .cl .st{color:#7ee2a8}
+[data-theme="dark"] .cl .nu{color:#ffd479}
+[data-theme="dark"] .cl .fn{color:#a5b4fc}
+[data-theme="dark"] #solution h1,[data-theme="dark"] #solution h2,[data-theme="dark"] #solution h3{color:#fff}
+[data-theme="dark"] #solution strong{color:#ffd479}
+[data-theme="dark"] #solution code{color:#8ab4ff;background:rgba(0,122,255,.12)}
+[data-theme="dark"] #solution pre{background:rgba(0,0,0,.5)}
+[data-theme="dark"] #solution pre code{color:#e9edf5}
+[data-theme="dark"] .transcript{background:
+    radial-gradient(ellipse at 50% 120%, rgba(255,255,255,.05), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 22px),
+    #1c2f1f; color:#f6f2e4}
+[data-theme="dark"] .udialog{background:rgba(28,28,34,.82)}
+[data-theme="dark"] .uhead{color:#fff}
+[data-theme="dark"] .ulog{background:rgba(0,0,0,.35)}
+[data-theme="dark"] .finput{background:rgba(0,0,0,.35);color:var(--fg)}
+[data-theme="dark"] .logbar{color:#fff}
 </style>
 </head>
 <body>
@@ -204,6 +242,7 @@ button{cursor:pointer;font-family:inherit}
     <span class="spacer"></span>
     <span class="version">软件版本：<b id="curVer">--</b> <span id="updateDot" class="udot" title="有新版本，点击查看" hidden>●</span></span>
     <button class="btn" id="runBtn" disabled>开始讲解</button>
+    <button class="btn ghost small" id="themeBtn" title="主题（浅色/深色/自动）">🕐</button>
     <span class="user-area" id="userArea"><button class="btn ghost small" id="regBtn">注册</button><button class="btn ghost small" id="loginBtn">登录</button></span>
   </div>
 

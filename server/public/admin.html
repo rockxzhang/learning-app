@@ -138,7 +138,7 @@ document.addEventListener('mousemove', function(e){
   if(e.target.closest && !e.target.closest('#ctrend')){ tip.style.opacity=0; return; }
   const rr=(x)/(r.width); const idx=Math.round(rr*(ctxData.length-1)); const p=ctxData[Math.min(Math.max(idx,0),ctxData.length-1)];
   tip.style.left=e.clientX-r.left+'px'; tip.style.top=(e.clientY-r.top)+'px';
-  tip.innerHTML='<b>'+fmtT(p.tLabel)+'</b> 累计 ¥'+p.cost.toFixed(6);
+  tip.innerHTML='<b>'+fmtT(p.tLabel)+'</b> 累计 ¥'+p.cost.toFixed(5);
   tip.style.opacity=1;
 });
 async function load(){

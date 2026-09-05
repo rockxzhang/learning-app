@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>管理后台 · 张老师随身讲</title>
 <style>
-body{margin:0;background:#f5f5f7;color:#1d1d1f;font:14px "Microsoft YaHei",-apple-system,sans-serif;padding:24px}
+body{margin:0;background:#f5f5f7;color:#1d1d1f;font:14px "Microsoft YaHei",-apple-system,"PingFang SC",sans-serif;padding:24px}
 h1{font-size:20px;margin:0 0 16px;color:#1d1d1f}
 h2{font-size:15px;margin:22px 0 8px;color:#007AFF}
 .cards{display:flex;gap:16px;flex-wrap:wrap}
@@ -17,8 +17,14 @@ th{background:#fafafa;color:#666;font-weight:600}
 tr:hover td{background:#f7faff}
 .muted{color:#999}
 .cost{color:#c25e00;font-weight:600}
-.chart{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
-#ctrend{width:100%;height:220px}
+.chart{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.04);position:relative}
+#ctrend{width:100%;height:230px;display:block}
+#ctrend .xlabel{font:500 9px "SF Mono","Microsoft YaHei",monospace;fill:#9aa3b4}
+#ctrend .ylab{font:500 11px "Microsoft YaHei",sans-serif;fill:#9aa3b4}
+#ctrend .dot{cursor:pointer;transition:r .15s}
+#ctrend .dot:hover{r:4.5;fill:#0044cc}
+.chart .tip{position:absolute;pointer-events:none;background:rgba(28,28,30,.9);color:#fff;font-size:12px;padding:6px 10px;border-radius:8px;transform:translate(-50%,-130%);white-space:nowrap;opacity:0;transition:opacity .15s;z-index:5}
+.chart .tip b{color:#7cc4ff}
 </style>
 </head>
 <body>
@@ -30,7 +36,10 @@ tr:hover td{background:#f7faff}
 </div>
 
 <h2>费用走势（每 5 分钟 · 自当日06:00起 · 累计总消耗）</h2>
-<div class="chart"><svg id="ctrend" viewBox="0 0 900 220" preserveAspectRatio="none"></svg></div>
+<div class="chart">
+  <svg id="ctrend"></svg>
+  <div class="tip" id="tip"></div>
+</div>
 
 <h2>用户列表（用户名 / 手机号 / 累计次数 / 累计费用 / 注册时间）</h2>
 <table><thead><tr><th>用户名</th><th>手机号</th><th>累计次数</th><th>累计费用</th><th>注册时间</th></tr></thead><tbody id="users"></tbody></table>
@@ -42,27 +51,49 @@ tr:hover td{background:#f7faff}
 async function j(u){ const r=await fetch(u); return r.json(); }
 function esc(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function money(v){ return '¥' + (Number(v)||0).toFixed(4); }
+function fmtT(iso){ const d=new Date(iso); return (d.getHours()<10?'0':'')+d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes(); }
+function fmtNum(v){ if(v>=1000) return (v/1000).toFixed(1)+'k'; if(v>=10) return v.toFixed(0); return (+v.toFixed(2))+''; }
 
+let ctxData=[];
 function renderChart(points){
   const svg=document.getElementById('ctrend');
-  const W=900,H=220,P=10;
-  if(!points||!points.length){ svg.innerHTML='<text x="450" y="110" fill="#999" text-anchor="middle">暂无数据</text>'; return; }
+  const W=Math.max(720, svg.clientWidth||720), H=230, L=52, R=18, T=18, B=74;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  if(!points||!points.length){ svg.innerHTML='<text x="'+(W/2)+'" y="'+(H/2)+'" fill="#999" text-anchor="middle">暂无数据</text>'; return; }
+  ctxData=points;
+  const plotW=W-L-R, plotH=H-T-B;
   const minT=Math.min(...points.map(p=>p.tTime)), maxT=Math.max(...points.map(p=>p.tTime));
   const maxC=Math.max(...points.map(p=>p.cost),0.0001);
-  const X=(t)=>P+((t-minT)/(Math.max(1,maxT-minT)))*(W-2*P);
-  const Y=(c)=>H-P-(c/maxC)*(H-2*P);
-  const pts=points.map(p=>X(p.tTime)+','+Y(p.cost)).join(' ');
+  const X=(t)=>L+((t-minT)/(Math.max(1,maxT-minT)))*plotW;
+  const Y=(c)=>H-B-(c/maxC)*plotH;
   let s='';
-  s+='<line x1="'+P+'" y1="'+(H-P)+'" x2="'+(W-P)+'" y2="'+(H-P)+'" stroke="#eee" stroke-width="1"/>';
-  s+='<polygon points="'+X(points[0].tTime)+','+(H-P)+' '+pts+' '+X(points[points.length-1].tTime)+','+(H-P)+'" fill="rgba(0,122,255,.08)"/>';
-  s+='<polyline points="'+pts+'" fill="none" stroke="#007AFF" stroke-width="2.5" stroke-linejoin="round"/>';
-  for(const p of points){ s+='<circle cx="'+X(p.tTime)+'" cy="'+Y(p.cost)+'" r="2.5" fill="#007AFF"/>'; }
-  s+='<text x="'+P+'" y="'+(H-2)+'" fill="#999" font-size="11">'+esc(fmtT(points[0].tLabel))+'</text>';
-  s+='<text x="'+(W-P)+'" y="'+(H-2)+'" fill="#999" font-size="11" text-anchor="end">'+esc(fmtT(points[points.length-1].tLabel))+'</text>';
+  // Y 网格 + 刻度
+  const yt=4;
+  for(let i=0;i<=yt;i++){ const c=(maxC/yt)*i, y=Math.round(Y(c)); s+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#eef0f4" stroke-width="1"/>'; s+='<text class="ylab" x="'+(L-9)+'" y="'+(y+4)+'" text-anchor="end">'+fmtNum(c)+'</text>'; }
+  // X 轴：每 5 分钟一个旋转标签
+  for(const p of points){ const x=Math.round(X(p.tTime)); s+='<g transform="translate('+x+','+(H-B)+')"><line x1="0" y1="0" x2="0" y2="4" stroke="#d5dae2"/><text class="xlabel" transform="rotate(-45)" x="4" y="13" text-anchor="end">'+esc(fmtT(p.tLabel))+'</text></g>'; }
+  // 曲线 + 面积 + 节点
+  const pts=points.map(p=>X(p.tTime)+','+Y(p.cost)).join(' ');
+  s+='<polygon data-area points="'+X(points[0].tTime)+','+(H-B)+' '+pts+' '+X(points[points.length-1].tTime)+','+(H-B)+'" fill="rgba(0,122,255,.09)"/>';
+  s+='<polyline data-line points="'+pts+'" fill="none" stroke="#007AFF" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  points.forEach((p,i)=>{ s+='<circle class="dot" cx="'+X(p.tTime)+'" cy="'+Y(p.cost)+'" r="2.6" fill="#fff" stroke="#007AFF" stroke-width="1.8" data-i="'+i+'"/>'; });
+  s+='<text class="ylab" x="'+L+'" y="14">费用(元)</text>';
   svg.innerHTML=s;
+  // 入场描线动画（reactbits 风格）
+  const line=svg.querySelector('polyline[data-line]');
+  if(line){ const len=(line.getTotalLength&&line.getTotalLength())||4000; line.style.strokeDasharray=len; line.style.strokeDashoffset=len; line.getBoundingClientRect(); line.style.transition='stroke-dashoffset 1.1s ease'; line.style.strokeDashoffset='0'; }
 }
-function fmtT(s){ const d=new Date(s); return (d.getHours()<10?'0':'')+d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes(); }
-
+// 悬停 tooltip
+document.addEventListener('mousemove', function(e){
+  const svg=document.getElementById('ctrend'); const tip=document.getElementById('tip');
+  if(!svg||!tip||!ctxData.length) return;
+  const r=svg.getBoundingClientRect(); const x=e.clientX-r.left;
+  if(e.target.closest && !e.target.closest('#ctrend')){ tip.style.opacity=0; return; }
+  const rr=(x)/(r.width); const idx=Math.round(rr*(ctxData.length-1)); const p=ctxData[Math.min(Math.max(idx,0),ctxData.length-1)];
+  tip.style.left=e.clientX-r.left+'px'; tip.style.top=(e.clientY-r.top)+'px';
+  tip.innerHTML='<b>'+fmtT(p.tLabel)+'</b> 累计 ¥'+p.cost.toFixed(2);
+  tip.style.opacity=1;
+});
 async function load(){
   const s=await j('api/admin/stats');
   document.getElementById('uCount').textContent=s.userCount||0;

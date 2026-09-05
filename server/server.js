@@ -109,6 +109,9 @@ const routes = {
     const username = String(body.username || '').trim();
     const phone = String(body.phone || '').trim();
     const password = String(body.password || '');
+    // 防注入：用户名仅允许 中文/字母/数字/下划线/短横线，1-20 位；拒绝 <script> 等风险字符
+    if (!/^[A-Za-z0-9_\-\u4e00-\u9fa5]{1,20}$/.test(username)) return { ok: false, error: '用户名仅限中英文、数字、下划线、短横线(1-20位)' };
+    if (!/^\d{6,11}$/.test(phone)) return { ok: false, error: '手机号格式不正确' };
     const users = readJSON(USERF);
     if (!username) return { ok: false, error: '用户名不能为空' };
     if (forbidden().some(w => username.toLowerCase() === w.toLowerCase())) return { ok: false, error: '违规' };
@@ -122,6 +125,8 @@ const routes = {
   'POST /api/login': async (req, body) => {
     const id = String(body.identifier || '').trim();
     const password = String(body.password || '');
+    // 防注入：账号仅允许 用户名安全字符 或 纯数字手机号
+    if (!(/^[A-Za-z0-9_\-\u4e00-\u9fa5]{1,20}$/.test(id) || /^\d{6,11}$/.test(id))) return { ok: false, error: '账号格式不正确' };
     const users = readJSON(USERF);
     const u = users.find(x => x.username === id || x.phone === id);
     if (!u || u.pass !== hash(password)) return { ok: false, error: '账号或密码错误' };

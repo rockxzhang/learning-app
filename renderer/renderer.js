@@ -437,7 +437,7 @@
     me = (u && u.username) ? { username: u.username } : null;
     const area = $('userArea');
     if (me) {
-      area.innerHTML = '<button class="btn ghost small" id="meBtn">我的信息</button><span class="uname">' + escH2(me.username) + '</span><button class="btn ghost small" id="logoutBtn">退出</button>';
+      area.innerHTML = '<button class="btn ghost small" id="meBtn">我的信息</button><span class="uname">' + escH2(me.username) + '</span><button class="btn ghost small" id="logoutBtn">退出登录</button>';
       $('meBtn').onclick = openInfo;
       $('logoutBtn').onclick = async () => { await api.userLogout(); renderUserArea(null); toast('已退出登录'); };
     } else {
@@ -511,7 +511,8 @@
     $('uLog').textContent = u.changelog || '（无更新说明）';
     $('uProg').classList.remove('show');
     $('uFill').style.width = '0%'; $('uPct').textContent = '0%';
-    $('uGoBtn').disabled = false; $('uGoBtn').textContent = '开始更新';
+    $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新';
+    $('uGoBtn').onclick = startUpdate;
   }
   function closeUpdate() { $('updateMask').hidden = true; upd = null; }
   async function checkUpdate() {
@@ -520,30 +521,33 @@
   $('updateDot').onclick = () => { if (window.__update) openUpdate(window.__update); };
   $('uCloseBtn').onclick = closeUpdate;
   $('uCloseX').onclick = closeUpdate;
-  $('uGoBtn').onclick = async () => {
+  async function startUpdate() {
     if (!upd) return;
     $('uGoBtn').disabled = true; $('uGoBtn').textContent = '更新中…';
     showProg2(0);
     try {
-      if (upd.type === 'patch') {
-        // 热更：仅进度条（模拟），完成后刷新
-        let p = 0;
-        await new Promise((res) => {
-          const t = setInterval(() => { p += 5; showProg2(p); if (p >= 100) { clearInterval(t); res(); } }, 70);
-        });
-        api.updateApply('patch', null).catch(() => {});
-        $('uLog').textContent = '热更新完成，界面已刷新（本地模拟）。'; toast('热更新完成');
-        $('uGoBtn').disabled = true; $('uGoBtn').textContent = '已完成';
-      } else {
-        const d = await api.updateDownload(upd.downloadUrl);
-        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '开始更新'; return; }
+      if (upd.type === 'major') {
+        const d = await api.updateDownload(upd.downloadUrl, upd.type);
+        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
         showProg2(100);
-        await api.updateApply(upd.type, d.path);
+        await api.updateApply('major', d.path);
         $('uLog').textContent = '正在拉起安装程序，随后软件将关闭…'; $('uGoBtn').textContent = '正在安装…';
+      } else {
+        // 热更：真实下载 update-patch.zip -> 解包覆盖到安装目录 -> 提示重启
+        const d = await api.updateDownload(upd.downloadUrl, upd.type);
+        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
+        showProg2(100);
+        const a = await api.updateApply(upd.type, d.path);
+        if (!a || !a.ok) { toast('更新失败：' + ((a && a.error) || '未知')); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
+        $('uLog').textContent = '热更新完成，已更新 ' + (a.applied || 0) + ' 个文件。请重启软件使更新生效。';
+        $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即重启';
+        $('uGoBtn').onclick = async () => { await api.appRestart(); };   // 立即重启
+        toast('热更新完成，请重启软件');
       }
       window.__updDone = true;
-    } catch (e) { toast('更新失败：' + e.message); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '开始更新'; }
-  };
+    } catch (e) { toast('更新失败：' + e.message); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; }
+  }
+  $('uGoBtn').onclick = startUpdate;
   api.onUpdateProgress((p) => { if (!p || !p.total) return; showProg2((p.received / p.total) * 100); });
   checkUpdate();
 })();

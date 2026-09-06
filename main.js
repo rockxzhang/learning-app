@@ -2,6 +2,7 @@
 const { app, BrowserWindow, ipcMain, dialog, desktopCapturer, screen, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { execFileSync } = require('child_process');   // 热更新解包差异包
 
 const services = require('./services/index');
 
@@ -95,26 +96,45 @@ ipcMain.handle('update:check', async () => {
   try { return await services.update.check(cfg.updateUrl, cur); }
   catch (e) { return { hasUpdate: false, error: String((e && e.message) || e) }; }
 });
-ipcMain.handle('update:download', async (e, url, sizeMb) => {
+ipcMain.handle('update:download', async (e, url, type) => {
   const dir = path.join(DATA_DIR, 'update');
   fs.mkdirSync(dir, { recursive: true });
-  const dest = path.join(dir, '张老师随身讲-update.exe');
+  const ext = (type === 'major') ? '.exe' : '.zip';   // 大版本装安装包, 中/小版本差异包
+  const dest = path.join(dir, 'update_pkg' + ext);
   try { await services.update.download(url, dest, (rec, total) => { if (win) win.webContents.send('update:progress', { received: rec, total }); }); }
   catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
-  // 大版本：在安装目录下创建 update 文件夹并放入安装包（本轮下载已存 DATA_DIR，此处再复制到 exe 旁的 update/）
-  try {
-    const instDir = path.dirname(app.getPath('exe'));
-    const updDir = path.join(instDir, 'update');
-    fs.mkdirSync(updDir, { recursive: true });
-    fs.copyFileSync(dest, path.join(updDir, '张老师随身讲-update.exe'));
-  } catch (e) {}
   return { ok: true, path: dest };
 });
 ipcMain.handle('update:apply', async (e, type, filePath) => {
-  if (type === 'patch') return { ok: true, hot: true };          // 小版本热更：仅完成(模拟刷新)
-  try { if (filePath && fs.existsSync(filePath)) await shell.openPath(filePath); } catch (e) {}   // 拉起安装流程
-  setTimeout(() => { try { app.quit(); } catch (e) { process.exit(0); } }, 1500);                // 关闭软件
-  return { ok: true, launching: true };
+  if (type === 'major') {
+    // 大版本：拉起安装并关闭
+    try { if (filePath && fs.existsSync(filePath)) await shell.openPath(filePath); } catch (e) {}
+    setTimeout(() => { try { app.quit(); } catch (e) { process.exit(0); } }, 1500);
+    return { ok: true, launching: true };
+  }
+  // 小版本(热更)/中版本(差分)：解包差异包并覆盖到安装目录，然后提示重启
+  try {
+    const instDir = path.dirname(app.getPath('exe'));
+    const extractDir = path.join(DATA_DIR, 'update', '_x');
+    fs.rmSync(extractDir, { recursive: true, force: true }); fs.mkdirSync(extractDir, { recursive: true });
+    execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
+      'Expand-Archive -Force -Path "' + filePath + '" -DestinationPath "' + extractDir + '"'], { stdio: 'ignore' });
+    let applied = 0, skipped = 0;
+    (function copyDir(dir) {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, ent.name); const rel = path.relative(extractDir, p); const dst = path.join(instDir, rel);
+        if (ent.isDirectory()) copyDir(p);
+        else { try { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(p, dst); applied++; } catch (err) { skipped++; } }
+      }
+    })(extractDir);
+    return { ok: true, hot: true, needsRestart: true, applied, skipped };
+  } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+});
+// 应用重启（热更后生效）
+ipcMain.handle('app:restart', () => {
+  try { app.relaunch(); } catch (e) {}
+  setTimeout(() => { try { app.exit(0); } catch (e) { process.exit(0); } }, 300);
+  return { ok: true };
 });
 
 // 保存文件（下载代码/讲解）

@@ -16,7 +16,7 @@ const DEFAULTS = {
   speechRate: 1.0,                            // 语速倍率
   autoSpeak: true,                            // 生成后自动开始讲解
   baseVersion: 1000,                          // 软件版本号起始（显示 V1.0.1000），每次讲解/打包 +1
-  updateUrl: 'http://127.0.0.1:9577/update.json',  // 更新后台（本地模拟；正式可改真实地址）
+  updateUrl: 'http://47.115.202.192:9588/update.json',  // 更新后台(线上服务器, 提供清单+差异更新包)
   serverUrl: 'http://47.115.202.192:9588',        // 已部署后端(用户/使用记录/管理后台)，端口9588直连
 };
 

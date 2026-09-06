@@ -211,6 +211,21 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   if (req.method === 'OPTIONS') { res.end(); return; }
+  // 客户端更新：/update.json 提供清单，/update/download 提供差异包
+  if (url === '/update.json') {
+    const mf = path.join(ROOT, 'update', 'manifest.json');
+    try { const m = JSON.parse(fs.readFileSync(mf, 'utf8')); res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify(m)); }
+    catch (e) { res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ latest: '0.0.0' })); }
+    return;
+  }
+  if (url === '/update/download') {
+    try {
+      const m = JSON.parse(fs.readFileSync(path.join(ROOT, 'update', 'manifest.json'), 'utf8'));
+      const p = path.join(ROOT, 'update', m.patchFile || 'update-patch.zip');
+      if (fs.existsSync(p)) { res.setHeader('Content-Type', 'application/octet-stream'); res.setHeader('Content-Length', fs.statSync(p).size); fs.createReadStream(p).pipe(res); return; }
+    } catch (e) {}
+    res.statusCode = 404; res.end('no patch'); return;
+  }
   if (url === '/admin' || url === '/admin/') {
     if (!isAdmin(req)) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(fs.readFileSync(path.join(ROOT, 'public', 'admin-login.html'), 'utf8')); return; }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');

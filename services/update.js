@@ -26,20 +26,24 @@ async function check(url, cur) {
   } finally { clearTimeout(timer); }
 }
 async function download(url, dest, onProgress) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('下载失败 HTTP ' + res.status);
-  const total = parseInt(res.headers.get('content-length') || '0', 10);
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 120000);   // 120s 超时防挂起
   const stream = fs.createWriteStream(dest);
-  let received = 0;
-  const reader = res.body.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    received += value.length;
-    if (!stream.write(Buffer.from(value))) await new Promise((r) => stream.once('drain', r));
-    if (onProgress) try { onProgress(received, total); } catch (e) {}
-  }
-  await new Promise((r) => stream.end(r));
-  return { size: received };
+  try {
+    const res = await fetch(url, { signal: ctl.signal });
+    if (!res.ok) throw new Error('下载失败 HTTP ' + res.status);
+    const total = parseInt(res.headers.get('content-length') || '0', 10);
+    let received = 0;
+    const reader = res.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.length;
+      if (!stream.write(Buffer.from(value))) await new Promise((r) => stream.once('drain', r));
+      if (onProgress) try { onProgress(received, total); } catch (e) {}
+    }
+    await new Promise((r) => stream.end(r));
+    return { size: received };
+  } finally { clearTimeout(timer); try { stream.destroy(); } catch (e) {} }
 }
 module.exports = { check, download, type, parse };

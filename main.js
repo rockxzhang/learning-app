@@ -2,7 +2,8 @@
 const { app, BrowserWindow, ipcMain, dialog, desktopCapturer, screen, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { execFile } = require('child_process');   // 热更新解包差异包(异步, 不卡主进程)
+const AdmZip = require('adm-zip');   // 热更新解包差异包(可靠, 不用 PowerShell——PowerShell Expand-Archive 对18MB包会卡死)
+const { execFile } = require('child_process');   // 用纯Node子进程(ELECTRON_RUN_AS_NODE)替换 asar——rename 不被 asar 钩子拦截
 
 const services = require('./services/index');
 
@@ -112,29 +113,28 @@ ipcMain.handle('update:apply', async (e, type, filePath) => {
     setTimeout(() => { try { app.quit(); } catch (e) { process.exit(0); } }, 1500);
     return { ok: true, launching: true };
   }
-  // 小版本(热更)/中版本(差分)：异步解包差异包并覆盖到安装目录，然后提示重启(不阻塞UI)
+  // 小版本(热更)/中版本(差分)：父进程解包差异包(asar 写为 .pending 避免 asar 钩子拦截) -> 纯Node子进程部署到安装目录
   try {
     const instDir = path.dirname(app.getPath('exe'));
     const extractDir = path.join(DATA_DIR, 'update', '_x');
     fs.rmSync(extractDir, { recursive: true, force: true }); fs.mkdirSync(extractDir, { recursive: true });
-    await new Promise((res, rej) => execFile('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
-      'Expand-Archive -Force -Path "' + filePath + '" -DestinationPath "' + extractDir + '"'], (err) => err ? rej(err) : res()));
-    let applied = 0, skipped = 0, failed = [];
-    async function copyDir(dir) {
-      for (const ent of await fs.promises.readdir(dir, { withFileTypes: true })) {
-        const p = path.join(dir, ent.name); const rel = path.relative(extractDir, p); const dst = path.join(instDir, rel);
-        if (ent.isDirectory()) await copyDir(p);
-        else {
-          let done = false;
-          for (let a = 0; a < 3 && !done; a++) {   // 重试，应对占用/瞬时锁
-            try { await fs.promises.mkdir(path.dirname(dst), { recursive: true }); await fs.promises.copyFile(p, dst); applied++; done = true; }
-            catch (err) { if (a === 2) { skipped++; failed.push(rel + ':' + (err.code || err.message)); } else await new Promise((r) => setTimeout(r, 300)); }
-          }
-        }
-      }
+    const zip = new AdmZip(filePath);
+    for (const entry of zip.getEntries()) {
+      const rel = entry.entryName.replace(/\\/g, '/');
+      if (rel.includes('..') || path.isAbsolute(rel)) continue;   // 防路径穿越
+      const isAsar = rel === 'resources/app.asar';
+      const dst = isAsar ? path.join(extractDir, 'resources', 'app.asar.pending') : path.join(extractDir, rel.split('/').join(path.sep));
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.writeFileSync(dst, entry.getData());   // .pending 非 .asar, 父进程可写
     }
-    await copyDir(extractDir);
-    return { ok: true, hot: true, needsRestart: true, applied, skipped, failed };   // failed 用于诊断/提示
+    // 子进程(Electron以Python Node形式): 把 extractDir 部署到 instDir; 把 .pending asar rename 成 app.asar(rename 不被 asar 钩子拦截)
+    const childScript = "const fs=require('fs'),path=require('path');const src=process.argv[1],dst=process.argv[2];let n=0;(function mv(from,to){for(const e of fs.readdirSync(from,{withFileTypes:true})){const s=path.join(from,e.name),d=path.join(to,e.name);if(e.isDirectory()){fs.mkdirSync(d,{recursive:true});mv(s,d);}else{fs.mkdirSync(path.dirname(d),{recursive:true});if(e.name==='app.asar.pending'){fs.renameSync(s,path.join(to,'app.asar'));}else{fs.copyFileSync(s,d);}n++;}}})(src,dst);console.log('APPLIED='+n);";
+    const applied = await new Promise((res, rej) => {
+      execFile(process.execPath, ['-e', childScript, extractDir, instDir],
+        { env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' }), timeout: 60000 },
+        (err, stdout) => { if (err) rej(err); else { const m = String(stdout).match(/APPLIED=(\d+)/); res(m ? Number(m[1]) : 0); } });
+    });
+    return { ok: true, hot: true, needsRestart: true, applied, skipped: 0, failed: [] };   // applied=覆盖的文件数
   } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
 });
 // 应用重启（热更后生效）

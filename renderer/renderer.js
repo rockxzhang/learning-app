@@ -537,10 +537,10 @@
       } else {
         // 热更：真实下载 update-patch.zip -> 解包覆盖到安装目录 -> 提示重启
         const d = await api.updateDownload(upd.downloadUrl, upd.type);
-        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
+        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; $('uLog').textContent = '下载失败：' + ((d && d.error) || '未知') ; return; }
         showProg2(100); $('uLog').textContent = '正在应用更新…';   // 应用阶段即时反馈，避免"卡住"感
         const a = await api.updateApply(upd.type, d.path);
-        if (!a || !a.ok) { toast('更新失败：' + ((a && a.error) || '未知')); updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
+        if (!a || !a.ok) { toast('更新失败：' + ((a && a.error) || '未知')); updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; $('uLog').textContent = '更新失败：' + ((a && a.error) || '未知'); return; }
         showProg2(100);   // 弹出提示时进度条=100%
         if (a.applied === 0) {
           $('uLog').textContent = '更新文件未能完全应用（可能被占用），请以管理员身份运行或手动安装新版。';

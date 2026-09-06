@@ -15,6 +15,7 @@
     "server": "node server/server.js"
   },
   "dependencies": {
+    "adm-zip": "^0.6.0",
     "ip2region": "^2.3.0",
     "mammoth": "^1.8.0",
     "pdf-parse": "^1.1.1",

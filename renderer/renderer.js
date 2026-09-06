@@ -504,8 +504,8 @@
   function openUpdate(u) {
     upd = u;
     $('updateMask').hidden = false;
-    $('uCur').textContent = 'V' + (u.curVersion || '--');
-    $('uNew').textContent = 'V' + u.latest;
+    $('uCur').textContent = 'V' + String(u.curVersion || '--').replace(/^V/i, '');
+    $('uNew').textContent = 'V' + String(u.latest || '--').replace(/^V/i, '');
     const typeMap = { major: '大版本（整包重装）', minor: '中版本（差分安装）', patch: '小版本（热更）' };
     $('uType').textContent = typeMap[u.type] || u.type;
     $('uLog').textContent = u.changelog || '（无更新说明）';

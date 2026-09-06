@@ -116,8 +116,14 @@ ipcMain.handle('update:apply', async (e, type, filePath) => {
   // 小版本(热更)/中版本(差分)：父进程解包差异包(asar 写为 .pending 避免 asar 钩子拦截) -> 纯Node子进程部署到安装目录
   try {
     const instDir = path.dirname(app.getPath('exe'));
-    const extractDir = path.join(DATA_DIR, 'update', '_x');
-    fs.rmSync(extractDir, { recursive: true, force: true }); fs.mkdirSync(extractDir, { recursive: true });
+    // 每次用全新目录，避免 rmSync 旧 _x 目录因残留文件 locked 抛 ENOTEMPTY
+    const extractDir = path.join(DATA_DIR, 'update', '_x' + Date.now());
+    fs.mkdirSync(extractDir, { recursive: true });
+    try {   // best-effort 清理旧 _x* 目录(忽略锁/失败)
+      for (const dn of fs.readdirSync(path.join(DATA_DIR, 'update'))) {
+        if (dn.startsWith('_x') && dn !== path.basename(extractDir)) { try { fs.rmSync(path.join(DATA_DIR, 'update', dn), { recursive: true, force: true }); } catch (e) {} }
+      }
+    } catch (e) {}
     const zip = new AdmZip(filePath);
     for (const entry of zip.getEntries()) {
       const rel = entry.entryName.replace(/\\/g, '/');

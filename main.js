@@ -116,12 +116,13 @@ ipcMain.handle('update:apply', async (e, type, filePath) => {
   // 小版本(热更)/中版本(差分)：父进程解包差异包(asar 写为 .pending 避免 asar 钩子拦截) -> 纯Node子进程部署到安装目录
   try {
     const instDir = path.dirname(app.getPath('exe'));
-    // 每次用全新目录，避免 rmSync 旧 _x 目录因残留文件 locked 抛 ENOTEMPTY
-    const extractDir = path.join(DATA_DIR, 'update', '_x' + Date.now());
+    // 解压目录放到与安装目录同盘(brother 目录)，确保子进程 rename 到 .asar 不跨盘(EXDEV)；且每次唯一避免 ENOTEMPTY
+    const workParent = path.dirname(instDir);
+    const extractDir = path.join(workParent, '.zl_upd_' + Date.now());
     fs.mkdirSync(extractDir, { recursive: true });
-    try {   // best-effort 清理旧 _x* 目录(忽略锁/失败)
-      for (const dn of fs.readdirSync(path.join(DATA_DIR, 'update'))) {
-        if (dn.startsWith('_x') && dn !== path.basename(extractDir)) { try { fs.rmSync(path.join(DATA_DIR, 'update', dn), { recursive: true, force: true }); } catch (e) {} }
+    try {   // best-effort 清理旧的 .zl_upd_* 目录(忽略锁/失败)
+      for (const dn of fs.readdirSync(workParent)) {
+        if (dn.startsWith('.zl_upd_') && dn !== path.basename(extractDir)) { try { fs.rmSync(path.join(workParent, dn), { recursive: true, force: true }); } catch (e) {} }
       }
     } catch (e) {}
     const zip = new AdmZip(filePath);

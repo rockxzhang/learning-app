@@ -119,16 +119,22 @@ ipcMain.handle('update:apply', async (e, type, filePath) => {
     fs.rmSync(extractDir, { recursive: true, force: true }); fs.mkdirSync(extractDir, { recursive: true });
     await new Promise((res, rej) => execFile('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
       'Expand-Archive -Force -Path "' + filePath + '" -DestinationPath "' + extractDir + '"'], (err) => err ? rej(err) : res()));
-    let applied = 0, skipped = 0;
+    let applied = 0, skipped = 0, failed = [];
     async function copyDir(dir) {
       for (const ent of await fs.promises.readdir(dir, { withFileTypes: true })) {
         const p = path.join(dir, ent.name); const rel = path.relative(extractDir, p); const dst = path.join(instDir, rel);
         if (ent.isDirectory()) await copyDir(p);
-        else { try { await fs.promises.mkdir(path.dirname(dst), { recursive: true }); await fs.promises.copyFile(p, dst); applied++; } catch (err) { skipped++; } }
+        else {
+          let done = false;
+          for (let a = 0; a < 3 && !done; a++) {   // 重试，应对占用/瞬时锁
+            try { await fs.promises.mkdir(path.dirname(dst), { recursive: true }); await fs.promises.copyFile(p, dst); applied++; done = true; }
+            catch (err) { if (a === 2) { skipped++; failed.push(rel + ':' + (err.code || err.message)); } else await new Promise((r) => setTimeout(r, 300)); }
+          }
+        }
       }
     }
     await copyDir(extractDir);
-    return { ok: true, hot: true, needsRestart: true, applied, skipped };
+    return { ok: true, hot: true, needsRestart: true, applied, skipped, failed };   // failed 用于诊断/提示
   } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
 });
 // 应用重启（热更后生效）

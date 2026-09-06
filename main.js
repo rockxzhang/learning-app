@@ -134,8 +134,8 @@ ipcMain.handle('update:apply', async (e, type, filePath) => {
       fs.mkdirSync(path.dirname(dst), { recursive: true });
       fs.writeFileSync(dst, entry.getData());   // .pending 非 .asar, 父进程可写
     }
-    // 子进程(Electron以Python Node形式): 把 extractDir 部署到 instDir; 把 .pending asar rename 成 app.asar(rename 不被 asar 钩子拦截)
-    const childScript = "const fs=require('fs'),path=require('path');const src=process.argv[1],dst=process.argv[2];let n=0;(function mv(from,to){for(const e of fs.readdirSync(from,{withFileTypes:true})){const s=path.join(from,e.name),d=path.join(to,e.name);if(e.isDirectory()){fs.mkdirSync(d,{recursive:true});mv(s,d);}else{fs.mkdirSync(path.dirname(d),{recursive:true});if(e.name==='app.asar.pending'){fs.renameSync(s,path.join(to,'app.asar'));}else{fs.copyFileSync(s,d);}n++;}}})(src,dst);console.log('APPLIED='+n);";
+    // 子进程(Electron以Node形式): 部署 extractDir -> instDir; 用 copyFileSync 覆盖 asar(可写运行中被占用的文件, rename会EPERM); noAsar 关闭asar钩子拦截
+    const childScript = "const fs=require('fs'),path=require('path');process.noAsar=true;const src=process.argv[1],dst=process.argv[2];let n=0;(function mv(from,to){for(const e of fs.readdirSync(from,{withFileTypes:true})){const s=path.join(from,e.name),d=path.join(to,e.name);if(e.isDirectory()){fs.mkdirSync(d,{recursive:true});mv(s,d);}else{fs.mkdirSync(path.dirname(d),{recursive:true});if(e.name==='app.asar.pending'){fs.copyFileSync(s,path.join(to,'app.asar'));}else{fs.copyFileSync(s,d);}n++;}}})(src,dst);console.log('APPLIED='+n);";
     const applied = await new Promise((res, rej) => {
       execFile(process.execPath, ['-e', childScript, extractDir, instDir],
         { env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' }), timeout: 60000 },

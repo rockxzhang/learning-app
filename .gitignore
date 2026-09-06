@@ -9,3 +9,4 @@ services/api.key
 build/appver.json
 server/data/users.json
 server/data/usage.json
+_*.js

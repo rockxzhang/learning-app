@@ -521,39 +521,41 @@
   $('updateDot').onclick = () => { if (window.__update) openUpdate(window.__update); };
   $('uCloseBtn').onclick = closeUpdate;
   $('uCloseX').onclick = closeUpdate;
+  let updating = false;
   async function startUpdate() {
-    if (!upd) return;
+    if (!upd || updating) return;   // 忙碌守卫：更新进行中忽略重复点击
+    updating = true;
     $('uGoBtn').disabled = true; $('uGoBtn').textContent = '更新中…';
     showProg2(0);
     try {
       if (upd.type === 'major') {
         const d = await api.updateDownload(upd.downloadUrl, upd.type);
-        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
+        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
         showProg2(100);
         await api.updateApply('major', d.path);
         $('uLog').textContent = '正在拉起安装程序，随后软件将关闭…'; $('uGoBtn').textContent = '正在安装…';
       } else {
         // 热更：真实下载 update-patch.zip -> 解包覆盖到安装目录 -> 提示重启
         const d = await api.updateDownload(upd.downloadUrl, upd.type);
-        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
+        if (!d || !d.ok) { toast('下载失败：' + ((d && d.error) || '未知')); updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
         showProg2(100); $('uLog').textContent = '正在应用更新…';   // 应用阶段即时反馈，避免"卡住"感
         const a = await api.updateApply(upd.type, d.path);
-        if (!a || !a.ok) { toast('更新失败：' + ((a && a.error) || '未知')); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
+        if (!a || !a.ok) { toast('更新失败：' + ((a && a.error) || '未知')); updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; return; }
         showProg2(100);   // 弹出提示时进度条=100%
         if (a.applied === 0) {
           $('uLog').textContent = '更新文件未能完全应用（可能被占用），请以管理员身份运行或手动安装新版。';
-          $('uGoBtn').disabled = false; $('uGoBtn').textContent = '再试一次';
+          updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '再试一次';
           $('uGoBtn').onclick = startUpdate;
           toast('部分文件更新失败');
         } else {
           $('uLog').textContent = '热更新完成，已更新 ' + (a.applied || 0) + ' 个文件。请重启软件使更新生效。';
-          $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即重启';
+          updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即重启';
           $('uGoBtn').onclick = async () => { await api.appRestart(); };   // 立即重启
           toast('热更新完成，请重启软件');
         }
       }
       window.__updDone = true;
-    } catch (e) { toast('更新失败：' + e.message); $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; }
+    } catch (e) { toast('更新失败：' + e.message); updating = false; $('uGoBtn').disabled = false; $('uGoBtn').textContent = '立即更新'; }
   }
   $('uGoBtn').onclick = startUpdate;
   api.onUpdateProgress((p) => { if (!p || !p.total) return; showProg2((p.received / p.total) * 100); });

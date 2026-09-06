@@ -61,29 +61,35 @@ execSync('npx electron-builder --win nsis --publish never --config.directories.o
 });
 console.log('完成。产物目录：' + outDir);
 
-// ---- 差异更新包：当前 win-unpacked vs 上一版 win-unpacked 的改变文件 ----
+// ---- 差异更新包：始终包含 resources/app.asar；其余与上一版对比，无上一版则整包 ----
 function walk(dir) { const out = []; for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const p = path.join(dir, e.name); if (e.isDirectory()) out.push(...walk(p)); else out.push(p); } return out; }
 function hashFile(f) { return crypto.createHash('md5').update(fs.readFileSync(f)).digest('hex'); }
 function buildUpdatePatch(curUp, prevUp, patchZip) {
-  if (!fs.existsSync(prevUp)) { console.log('（上一版 win-unpacked 不存在，本次为完整包或首版，跳过差异 update-patch）'); return; }
   const stage = path.join(outDir, '_patchstage');
   fs.rmSync(stage, { recursive: true, force: true }); fs.mkdirSync(stage, { recursive: true });
-  const changed = [];
-  for (const curFile of walk(curUp)) {
-    const rel = path.relative(curUp, curFile);
-    const prevFile = path.join(prevUp, rel);
-    if (!fs.existsSync(prevFile) || hashFile(curFile) !== hashFile(prevFile)) changed.push(rel);
+  const changed = new Set();
+  const asarDir = 'resources' + path.sep + 'app.asar';
+  // 关键：始终包含 app.asar（app 代码，每次都会变）
+  if (fs.existsSync(path.join(curUp, asarDir))) changed.add(asarDir);
+  if (fs.existsSync(prevUp)) {
+    for (const curFile of walk(curUp)) {
+      const rel = path.relative(curUp, curFile);
+      if (rel === asarDir) continue;                     // 已加入
+      const prevFile = path.join(prevUp, rel);
+      if (!fs.existsSync(prevFile) || hashFile(curFile) !== hashFile(prevFile)) changed.add(rel);
+    }
+  } else {
+    for (const curFile of walk(curUp)) { const rel = path.relative(curUp, curFile); if (rel !== asarDir) changed.add(rel); }   // 无上一版：整包
   }
-  console.log('差异更新文件数：' + changed.length);
+  console.log('更新包文件数：' + changed.size + '（含 app.asar=' + changed.has(asarDir) + '）');
+  if (!changed.size) { console.warn('无变更文件，未生成差异包'); return; }
   for (const rel of changed) {
     const dst = path.join(stage, rel);
     fs.mkdirSync(path.dirname(dst), { recursive: true });
     fs.copyFileSync(path.join(curUp, rel), dst);
   }
-  if (changed.length) {
-    execSync('powershell -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path \'' + stage.replace(/\\/g, '/') + '/*\' -DestinationPath \'' + patchZip.replace(/\\/g, '/') + '\' -Force"', { cwd: ROOT, stdio: 'inherit' });
-    console.log('差异更新包已生成：' + patchZip);
-  }
+  execSync('powershell -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path \'' + stage.replace(/\\/g, '/') + '/*\' -DestinationPath \'' + patchZip.replace(/\\/g, '/') + '\' -Force"', { cwd: ROOT, stdio: 'inherit' });
+  console.log('差异更新包已生成：' + patchZip);
 }
 
 // ---- 更新 manifest（含差异包信息）----

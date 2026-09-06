@@ -2,7 +2,7 @@
 const { app, BrowserWindow, ipcMain, dialog, desktopCapturer, screen, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { execFileSync } = require('child_process');   // 热更新解包差异包
+const { execFile } = require('child_process');   // 热更新解包差异包(异步, 不卡主进程)
 
 const services = require('./services/index');
 
@@ -112,21 +112,22 @@ ipcMain.handle('update:apply', async (e, type, filePath) => {
     setTimeout(() => { try { app.quit(); } catch (e) { process.exit(0); } }, 1500);
     return { ok: true, launching: true };
   }
-  // 小版本(热更)/中版本(差分)：解包差异包并覆盖到安装目录，然后提示重启
+  // 小版本(热更)/中版本(差分)：异步解包差异包并覆盖到安装目录，然后提示重启(不阻塞UI)
   try {
     const instDir = path.dirname(app.getPath('exe'));
     const extractDir = path.join(DATA_DIR, 'update', '_x');
     fs.rmSync(extractDir, { recursive: true, force: true }); fs.mkdirSync(extractDir, { recursive: true });
-    execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
-      'Expand-Archive -Force -Path "' + filePath + '" -DestinationPath "' + extractDir + '"'], { stdio: 'ignore' });
+    await new Promise((res, rej) => execFile('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
+      'Expand-Archive -Force -Path "' + filePath + '" -DestinationPath "' + extractDir + '"'], (err) => err ? rej(err) : res()));
     let applied = 0, skipped = 0;
-    (function copyDir(dir) {
-      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    async function copyDir(dir) {
+      for (const ent of await fs.promises.readdir(dir, { withFileTypes: true })) {
         const p = path.join(dir, ent.name); const rel = path.relative(extractDir, p); const dst = path.join(instDir, rel);
-        if (ent.isDirectory()) copyDir(p);
-        else { try { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(p, dst); applied++; } catch (err) { skipped++; } }
+        if (ent.isDirectory()) await copyDir(p);
+        else { try { await fs.promises.mkdir(path.dirname(dst), { recursive: true }); await fs.promises.copyFile(p, dst); applied++; } catch (err) { skipped++; } }
       }
-    })(extractDir);
+    }
+    await copyDir(extractDir);
     return { ok: true, hot: true, needsRestart: true, applied, skipped };
   } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
 });

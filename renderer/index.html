@@ -170,6 +170,8 @@ button{cursor:pointer;font-family:inherit}
 
 /* 版本升级 */
 .udot{color:#FF3B30;font-size:13px;margin-left:4px;cursor:pointer;animation:udot 1.2s infinite}
+.udot-btn{background:#FF3B30;border:0;color:#fff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin-left:6px;cursor:pointer;box-shadow:0 2px 8px rgba(255,59,48,.45);animation:udot 1.4s infinite;transition:transform .2s}
+.udot-btn:hover{transform:scale(1.06);filter:brightness(1.08)}
 @keyframes udot{0%,100%{opacity:.4}50%{opacity:1}}
 .version{cursor:default}
 .umask{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -245,7 +247,7 @@ button{cursor:pointer;font-family:inherit}
     <button class="btn ghost" id="shotBtn">题目截图</button>
     <span class="fname" id="fname">未选择</span>
     <span class="spacer"></span>
-    <span class="version">软件版本：<b id="curVer">--</b> <span id="updateDot" class="udot" title="有新版本，点击查看" hidden>●</span></span>
+    <span class="version">软件版本：<b id="curVer">--</b> <button id="updateDot" class="udot-btn" title="发现新版本，点击查看更新" hidden>发现新版本</button></span>
     <button class="btn" id="runBtn" disabled>开始讲解</button>
     <button class="btn ghost small" id="themeBtn" title="主题（浅色/深色/自动）">🕐</button>
     <span class="user-area" id="userArea"><button class="btn ghost small" id="regBtn">注册</button><button class="btn ghost small" id="loginBtn">登录</button></span>

@@ -364,6 +364,7 @@
   $('dlCodeBtn').onclick = async () => {
     if (!current) return;
     if (!ensureLogin('请先登录后再下载')) return;
+    toast('正在打开保存对话框…');
     const r = await api.saveFile(sanitizeName(current.title) + '.cpp', stripFence(current.code || ''), 'C++ 源文件', 'cpp');
     if (r && r.ok) toast('已保存代码：' + r.filePath); else if (r && r.canceled) toast('已取消');
     else if (r && r.error) toast('保存失败：' + r.error);
@@ -371,6 +372,7 @@
   $('dlDocBtn').onclick = async () => {
     if (!current) return;
     if (!ensureLogin('请先登录后再下载')) return;
+    toast('正在打开保存对话框…');
     const r = await api.saveFile(sanitizeName(current.title) + '.doc', buildDocHtml(current), 'Word 文档', 'doc');
     if (r && r.ok) toast('已保存讲解：' + r.filePath); else if (r && r.canceled) toast('已取消');
     else if (r && r.error) toast('保存失败：' + r.error);
@@ -379,6 +381,7 @@
   $('printBtn').onclick = async () => {
     if (!current) return;
     if (!ensureLogin('请先登录后再打印')) return;
+    toast('正在打开打印…');
     const r = await api.printDoc(buildDocHtml(current));
     if (r && !r.ok && r.error) toast('打印失败：' + r.error);
   };

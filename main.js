@@ -119,9 +119,13 @@ ipcMain.handle('update:apply', async (e, type, filePath) => {
 
 // 保存文件（下载代码/讲解）
 ipcMain.handle('file:save', async (e, defaultName, content, filterName, ext) => {
+  // 让保存对话框尽快出现：还原/聚焦窗口，并默认定位到"下载"目录(避免扫慢速目录卡顿)
+  try { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } } catch (e) {}
+  let defaultDir = ''; try { defaultDir = app.getPath('downloads'); } catch (e) { defaultDir = app.getPath('home'); }
+  const defaultPath = path.isAbsolute(defaultName) ? defaultName : path.join(defaultDir, defaultName);
   const r = await dialog.showSaveDialog(win, {
     title: '保存 ' + defaultName,
-    defaultPath: defaultName,
+    defaultPath,
     filters: [{ name: filterName, extensions: [ext] }],
   });
   if (r.canceled || !r.filePath) return { ok: false, canceled: true };

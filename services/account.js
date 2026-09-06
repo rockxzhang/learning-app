@@ -3,8 +3,11 @@ const fs = require('fs');
 const path = require('path');
 
 async function post(cfg, url, body) {
-  const r = await fetch(cfg.serverUrl + url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  return r.json();
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);   // 8s 超时
+  try {
+    const r = await fetch(cfg.serverUrl + url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
+    return await r.json();
+  } finally { clearTimeout(t); }
 }
 function sessionFile(dir) { return path.join(dir, 'session.json'); }
 function saveSession(dir, s) { fs.writeFileSync(sessionFile(dir), JSON.stringify(s || {}), 'utf8'); }

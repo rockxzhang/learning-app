@@ -26,6 +26,7 @@ function load(dir) {
   try {
     const merged = Object.assign({}, DEFAULTS, JSON.parse(fs.readFileSync(file(dir), 'utf8')));
     merged.teacherVoice = DEFAULTS.teacherVoice;   // 讲解配音固定为阳光男声，不随用户设置覆盖
+    merged.updateUrl = DEFAULTS.updateUrl;         // 更新后台固定指向线上服务器，不随旧配置覆盖(否则无更新红点)
     return merged;
   } catch (e) { return Object.assign({}, DEFAULTS); }
 }

@@ -31,12 +31,19 @@ function readChangelog() {
   return String(process.env.CHANGELOG || '').trim();
 }
 async function promptChangelog() {
-  let c = readChangelog();
-  if (c) return c;
-  if (!process.stdin.isTTY) return '（无更新说明）';
+  const i = process.argv.indexOf('--changelog');
+  if (i >= 0) return String(process.argv[i + 1] || '').trim();
+  if (process.env.CHANGELOG) return String(process.env.CHANGELOG).trim();
+  const fileHint = readChangelog();   // 已有文件内容作为默认提示
+  if (!process.stdin.isTTY) return fileHint || '（无更新说明）';   // CI/非交互
+  // 交互：总是询问，并给出默认(上次文件)便于确认
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return await new Promise((res) => {
-    rl.question('请输入本次更新内容(作为客户端更新公告)：', (ans) => { rl.close(); res(String(ans || '').trim() || '（无更新说明）'); });
+    rl.question('请输入本次更新内容(客户端更新公告)' + (fileHint ? '（默认:' + fileHint + '，回车用默认）' : '：'), (ans) => {
+      rl.close();
+      const a = String(ans || '').trim();
+      res(a || fileHint || '（无更新说明）');
+    });
   });
 }
 

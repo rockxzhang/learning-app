@@ -15,11 +15,15 @@ function type(cur, latest) {
   return 'none';
 }
 async function check(url, cur) {
-  const res = await fetch(url, { headers: { 'User-Agent': 'ds' } });
-  if (!res.ok) return { hasUpdate: false, error: 'HTTP ' + res.status };
-  const m = await res.json();
-  const t = type(cur, m.latest);
-  return { hasUpdate: t !== 'none', curVersion: cur, latest: m.latest, changelog: m.changelog || '', type: t, downloadUrl: m.downloadUrl || '', sizeMb: m.sizeMb || 0 };
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 6000);   // 6s 超时，防止服务器不可达时挂起
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'ds' }, signal: ctl.signal });
+    if (!res.ok) return { hasUpdate: false, error: 'HTTP ' + res.status };
+    const m = await res.json();
+    const typ = type(cur, m.latest);
+    return { hasUpdate: typ !== 'none', curVersion: cur, latest: m.latest, changelog: m.changelog || '', type: typ, downloadUrl: m.downloadUrl || '', sizeMb: m.sizeMb || 0 };
+  } finally { clearTimeout(timer); }
 }
 async function download(url, dest, onProgress) {
   const res = await fetch(url);
